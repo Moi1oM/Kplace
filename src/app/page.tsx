@@ -3,69 +3,93 @@
 import Map from "@/components/Map";
 
 export default function Home() {
-  return (
-    <main className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            서울시청 위치
-          </h1>
-          <p className="text-gray-600">
-            네이버 지도 API v3를 이용한 서울특별시청 위치 표시
-          </p>
-        </header>
-
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              📍 서울특별시청
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <Map width="100%" height="400px" zoom={16} />
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">주소</h3>
-                  <p className="text-gray-600">
-                    서울특별시 중구 세종대로 110 (태평로1가)
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">좌표</h3>
-                  <p className="text-gray-600">
-                    위도: 37.5663°N
-                    <br />
-                    경도: 126.9779°E
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">교통</h3>
-                  <ul className="text-gray-600 text-sm space-y-1">
-                    <li>• 지하철 1호선, 2호선 시청역</li>
-                    <li>• 지하철 5호선 광화문역</li>
-                    <li>• 버스 정류장: 시청 앞, 덕수궁</li>
-                  </ul>
-                </div>
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    💡 <strong>팁:</strong> 마커를 클릭하면 상세 정보를 볼 수
-                    있습니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 모바일에서 지도 높이 조정 */}
-            <div className="block md:hidden mt-6">
-              <Map width="100%" height="300px" zoom={15} />
-            </div>
-          </div>
+  // 한국 주요 도청 마커 데이터
+  const markers = [
+    {
+      lat: 37.5663,
+      lng: 126.9779,
+      title: "서울시청",
+      content: `
+        <div style="padding:10px; font-size:12px; line-height:1.5;">
+          <strong>서울특별시청</strong><br/>
+          서울특별시 중구 세종대로 110<br/>
+          <small>Seoul City Hall</small>
         </div>
+      `,
+    },
+    {
+      lat: 37.2636,
+      lng: 127.0286,
+      title: "경기도청",
+      content: `
+        <div style="padding:10px; font-size:12px; line-height:1.5;">
+          <strong>경기도청</strong><br/>
+          경기도 수원시 영통구 도청로 30<br/>
+          <small>Gyeonggi Provincial Office</small>
+        </div>
+      `,
+    },
+    {
+      lat: 37.8813,
+      lng: 127.7298,
+      title: "강원도청",
+      content: `
+        <div style="padding:10px; font-size:12px; line-height:1.5;">
+          <strong>강원특별자치도청</strong><br/>
+          강원특별자치도 춘천시 중앙로 1<br/>
+          <small>Gangwon Provincial Office</small>
+        </div>
+      `,
+    },
+    {
+      lat: 36.5184,
+      lng: 126.8,
+      title: "충청남도청",
+      content: `
+        <div style="padding:10px; font-size:12px; line-height:1.5;">
+          <strong>충청남도청</strong><br/>
+          충청남도 홍성군 홍북읍 충남대로 21<br/>
+          <small>Chungcheongnam-do Provincial Office</small>
+        </div>
+      `,
+    },
+    {
+      lat: 35.7175,
+      lng: 127.153,
+      title: "전라북도청",
+      content: `
+        <div style="padding:10px; font-size:12px; line-height:1.5;">
+          <strong>전북특별자치도청</strong><br/>
+          전북특별자치도 전주시 완산구 효자로 225<br/>
+          <small>Jeonbuk Provincial Office</small>
+        </div>
+      `,
+    },
+    {
+      lat: 35.2538,
+      lng: 128.6402,
+      title: "경상남도청",
+      content: `
+        <div style="padding:10px; font-size:12px; line-height:1.5;">
+          <strong>경상남도청</strong><br/>
+          경상남도 창원시 의창구 중앙대로 300<br/>
+          <small>Gyeongsangnam-do Provincial Office</small>
+        </div>
+      `,
+    },
+  ];
 
-        <footer className="mt-8 text-center text-sm text-gray-500">
-          <p>네이버 지도 API v3 사용 | Maps © NAVER Corp.</p>
-        </footer>
+  return (
+    <main className="w-screen h-screen overflow-hidden relative">
+      {/* 전체화면 지도 */}
+      <div className="w-full h-full">
+        <Map
+          width="100%"
+          height="100vh"
+          zoom={8}
+          center={{ lat: 36.5, lng: 127.5 }}
+          markers={markers}
+        />
       </div>
     </main>
   );
