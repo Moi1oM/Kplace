@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
+
 export default function ZoomToPixels() {
   const handleZoomToPixels = () => {
     const event = new CustomEvent("mapZoomToPixels");
@@ -8,14 +11,14 @@ export default function ZoomToPixels() {
 
   return (
     <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-40">
-      <button
+      <Button
         onClick={handleZoomToPixels}
-        className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg hover:bg-opacity-100 transition-all duration-200"
+        variant="secondary"
+        className="rounded-lg shadow-lg backdrop-blur-sm"
       >
-        <p className="text-sm text-gray-700 flex items-center gap-2">
-          🔍 Zoom in to see the pixels
-        </p>
-      </button>
+        <Search className="h-4 w-4" />
+        Zoom in to see the pixels
+      </Button>
     </div>
   );
 }

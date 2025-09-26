@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  memo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { usePixelStore } from "@/lib/store";
 
 declare global {
   interface Window {
@@ -22,188 +30,269 @@ interface MapProps {
   zoom?: number;
   center?: { lat: number; lng: number };
   markers?: MarkerData[];
+  children?: React.ReactNode;
 }
 
-export default function Map({
-  width = "100%",
-  height = "400px",
-  zoom = 10,
-  center = { lat: 37.5663, lng: 126.9779 }, // 기본값: 서울시청
-  markers = [
+const Map = memo(
+  forwardRef<any, MapProps>(function Map(
     {
-      lat: 37.5663,
-      lng: 126.9779,
-      title: "서울시청",
-      content: `
-        <div style="padding:10px; font-size:12px; line-height:1.5;">
-          <strong>서울특별시청</strong><br/>
-          서울특별시 중구 세종대로 110<br/>
-          <small>Seoul City Hall</small>
-        </div>
-      `,
+      width = "100%",
+      height = "400px",
+      zoom = 10,
+      center = { lat: 37.5663, lng: 126.9779 },
+      markers = [],
+      children,
     },
-  ],
-}: MapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+    ref
+  ) {
+    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<any>(null);
+    const markersArrayRef = useRef<any[]>([]);
+    const infoWindowsArrayRef = useRef<any[]>([]);
+    const isInitializedRef = useRef(false);
+    const setCurrentZoom = usePixelStore((state) => state.setCurrentZoom);
 
-  useEffect(() => {
-    // 인증 실패 처리 함수 정의
-    window.navermap_authFailure = function () {
-      console.error(
-        "네이버 지도 API 인증에 실패했습니다. 클라이언트 ID를 확인해주세요.",
-      );
-      alert(
-        "네이버 지도 API 인증에 실패했습니다. 클라이언트 ID를 확인해주세요.",
-      );
-    };
+    // 마커 업데이트 함수
+    const updateMarkers = useCallback((newMarkers: MarkerData[]) => {
+      if (!mapInstanceRef.current || !window.naver?.maps) return;
 
-    const initMap = () => {
-      if (window.naver && window.naver.maps && mapRef.current) {
-        // 지도 중심점 설정
+      // 기존 마커 제거
+      markersArrayRef.current.forEach((marker) => {
+        marker.setMap(null);
+      });
+      infoWindowsArrayRef.current.forEach((infoWindow) => {
+        infoWindow.close();
+      });
+      markersArrayRef.current = [];
+      infoWindowsArrayRef.current = [];
+
+      // 새 마커 생성
+      newMarkers.forEach((markerData, index) => {
+        const marker = new window.naver.maps.Marker({
+          position: new window.naver.maps.LatLng(
+            markerData.lat,
+            markerData.lng
+          ),
+          map: mapInstanceRef.current,
+          title: markerData.title || `Marker ${index + 1}`,
+        });
+
+        markersArrayRef.current.push(marker);
+
+        if (markerData.content) {
+          const infoWindow = new window.naver.maps.InfoWindow({
+            content: markerData.content,
+          });
+
+          infoWindowsArrayRef.current.push(infoWindow);
+
+          window.naver.maps.Event.addListener(marker, "click", function () {
+            infoWindowsArrayRef.current.forEach((iw) => iw.close());
+            if (infoWindow.getMap()) {
+              infoWindow.close();
+            } else {
+              infoWindow.open(mapInstanceRef.current, marker);
+            }
+          });
+        }
+      });
+    }, []);
+
+    // 이벤트 핸들러들
+    const handleToggleMarkers = useCallback((event: any) => {
+      const visible = event.detail.visible;
+      markersArrayRef.current.forEach((marker) => {
+        if (visible) {
+          marker.setMap(mapInstanceRef.current);
+        } else {
+          marker.setMap(null);
+          infoWindowsArrayRef.current.forEach((iw) => iw.close());
+        }
+      });
+    }, []);
+
+    const handleZoomIn = useCallback(() => {
+      if (mapInstanceRef.current) {
+        const currentZoom = mapInstanceRef.current.getZoom();
+        mapInstanceRef.current.setZoom(currentZoom + 1, true);
+      }
+    }, []);
+
+    const handleZoomOut = useCallback(() => {
+      if (mapInstanceRef.current) {
+        const currentZoom = mapInstanceRef.current.getZoom();
+        mapInstanceRef.current.setZoom(currentZoom - 1, true);
+      }
+    }, []);
+
+    const handleZoomToPixels = useCallback(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.setZoom(12, true);
+      }
+    }, []);
+
+    // Expose map instance and utility functions via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        getMapInstance: () => mapInstanceRef.current,
+        getCenter: () => mapInstanceRef.current?.getCenter(),
+        getZoom: () => mapInstanceRef.current?.getZoom(),
+        getBounds: () => mapInstanceRef.current?.getBounds(),
+        getProjection: () => mapInstanceRef.current?.getProjection(),
+        fromLatLngToPoint: (lat: number, lng: number) => {
+          if (!mapInstanceRef.current || !window.naver?.maps) return null;
+          const projection = mapInstanceRef.current.getProjection();
+          const latLng = new window.naver.maps.LatLng(lat, lng);
+          return projection.fromCoordToOffset(latLng);
+        },
+        fromPointToLatLng: (x: number, y: number) => {
+          if (!mapInstanceRef.current || !window.naver?.maps) return null;
+          const projection = mapInstanceRef.current.getProjection();
+          const point = new window.naver.maps.Point(x, y);
+          return projection.fromOffsetToCoord(point);
+        },
+      }),
+      []
+    );
+
+    // 지도 초기화 - 한 번만 실행
+    useEffect(() => {
+      if (isInitializedRef.current) return;
+
+      // 인증 실패 처리 함수 정의
+      window.navermap_authFailure = function () {
+        console.error(
+          "네이버 지도 API 인증에 실패했습니다. 클라이언트 ID를 확인해주세요."
+        );
+        alert(
+          "네이버 지도 API 인증에 실패했습니다. 클라이언트 ID를 확인해주세요."
+        );
+      };
+
+      const initMap = () => {
+        if (
+          !window.naver?.maps ||
+          !mapRef.current ||
+          isInitializedRef.current
+        ) {
+          return;
+        }
+
+        // 지도 옵션
         const mapOptions = {
           center: new window.naver.maps.LatLng(center.lat, center.lng),
           zoom: zoom,
-          // 지도 타입 컨트롤 제거
           mapTypeControl: false,
-          // 줌 컨트롤 제거
           zoomControl: false,
-          // 로고 컨트롤 제거
           logoControl: false,
-          // 맵 데이터 컨트롤 제거
           mapDataControl: false,
-          // 축척 컨트롤 제거
           scaleControl: false,
         };
 
         // 지도 생성
         const map = new window.naver.maps.Map(mapRef.current, mapOptions);
         mapInstanceRef.current = map;
+        isInitializedRef.current = true;
 
-        // 마커들과 정보창들을 저장할 배열
-        const markersArray: any[] = [];
-        const infoWindowsArray: any[] = [];
+        // 초기 줌 레벨 설정
+        setCurrentZoom(zoom);
 
-        // 각 마커 데이터에 대해 마커와 정보창 생성
-        markers.forEach((markerData, index) => {
-          // 마커 생성
-          const marker = new window.naver.maps.Marker({
-            position: new window.naver.maps.LatLng(
-              markerData.lat,
-              markerData.lng,
-            ),
-            map: map,
-            title: markerData.title || `Marker ${index + 1}`,
-          });
-
-          markersArray.push(marker);
-
-          // 정보창 생성 (content가 있는 경우에만)
-          if (markerData.content) {
-            const infoWindow = new window.naver.maps.InfoWindow({
-              content: markerData.content,
-            });
-
-            infoWindowsArray.push(infoWindow);
-
-            // 마커 클릭 시 정보창 표시
-            window.naver.maps.Event.addListener(marker, "click", function () {
-              // 다른 모든 정보창 닫기
-              infoWindowsArray.forEach((iw) => iw.close());
-
-              // 현재 정보창 토글
-              if (infoWindow.getMap()) {
-                infoWindow.close();
-              } else {
-                infoWindow.open(map, marker);
-              }
-            });
+        // 줌 레벨 변경 이벤트 리스너
+        window.naver.maps.Event.addListener(map, "zoom_changed", function () {
+          const newZoom = map.getZoom();
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Map Debug] Zoom changed:', newZoom);
           }
+          setCurrentZoom(newZoom);
         });
 
-        // 마커 토글 이벤트 리스너
-        const handleToggleMarkers = (event: any) => {
-          const visible = event.detail.visible;
-          markersArray.forEach((marker) => {
-            if (visible) {
-              marker.setMap(map);
-            } else {
-              marker.setMap(null);
-              // 마커가 숨겨질 때 정보창도 닫기
-              infoWindowsArray.forEach((iw) => iw.close());
-            }
-          });
-        };
+        // 지도 이동 완료 이벤트 리스너
+        window.naver.maps.Event.addListener(map, "idle", function () {
+          window.dispatchEvent(
+            new CustomEvent("mapMoved", {
+              detail: {
+                center: map.getCenter(),
+                bounds: map.getBounds(),
+                zoom: map.getZoom(),
+              },
+            })
+          );
+        });
 
-        // 커스텀 줌 이벤트 리스너 추가
-        const handleZoomIn = () => {
-          if (mapInstanceRef.current) {
-            const currentZoom = mapInstanceRef.current.getZoom();
-            // 부드러운 줌인 애니메이션
-            mapInstanceRef.current.setZoom(currentZoom + 1, true);
-          }
-        };
+        // 초기 마커 생성
+        updateMarkers(markers);
 
-        const handleZoomOut = () => {
-          if (mapInstanceRef.current) {
-            const currentZoom = mapInstanceRef.current.getZoom();
-            // 부드러운 줌아웃 애니메이션
-            mapInstanceRef.current.setZoom(currentZoom - 1, true);
-          }
-        };
-
-        const handleZoomToPixels = () => {
-          if (mapInstanceRef.current) {
-            // 줌 레벨 12로 부드럽게 전환
-            mapInstanceRef.current.setZoom(12, true);
-          }
-        };
-
+        // 이벤트 리스너 등록
         window.addEventListener("toggleMarkers", handleToggleMarkers);
         window.addEventListener("mapZoomIn", handleZoomIn);
         window.addEventListener("mapZoomOut", handleZoomOut);
         window.addEventListener("mapZoomToPixels", handleZoomToPixels);
+      };
 
-        // cleanup 함수에서 이벤트 리스너 제거
-        return () => {
-          window.removeEventListener("toggleMarkers", handleToggleMarkers);
-          window.removeEventListener("mapZoomIn", handleZoomIn);
-          window.removeEventListener("mapZoomOut", handleZoomOut);
-          window.removeEventListener("mapZoomToPixels", handleZoomToPixels);
-        };
-      }
-    };
+      // 네이버 지도 API 로드 확인
+      const checkNaverMaps = setInterval(() => {
+        if (window.naver?.maps) {
+          clearInterval(checkNaverMaps);
+          initMap();
+        }
+      }, 100);
 
-    // 네이버 지도 API가 로드될 때까지 대기
-    const checkNaverMaps = setInterval(() => {
-      if (window.naver && window.naver.maps) {
+      // Cleanup
+      return () => {
         clearInterval(checkNaverMaps);
-        const cleanup = initMap();
+        window.removeEventListener("toggleMarkers", handleToggleMarkers);
+        window.removeEventListener("mapZoomIn", handleZoomIn);
+        window.removeEventListener("mapZoomOut", handleZoomOut);
+        window.removeEventListener("mapZoomToPixels", handleZoomToPixels);
+      };
+    }, []); // 빈 의존성 배열 - 한 번만 실행
 
-        // cleanup 함수를 반환하여 useEffect cleanup에서 호출
-        return cleanup;
+    // 마커 업데이트 - markers prop 변경 시에만 실행
+    useEffect(() => {
+      if (isInitializedRef.current && markers) {
+        updateMarkers(markers);
       }
-    }, 100);
+    }, [markers, updateMarkers]);
 
-    return () => {
-      clearInterval(checkNaverMaps);
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.destroy();
+    // 지도 중심/줌 업데이트
+    useEffect(() => {
+      if (mapInstanceRef.current && isInitializedRef.current) {
+        const currentCenter = mapInstanceRef.current.getCenter();
+        const currentZoom = mapInstanceRef.current.getZoom();
+
+        // 중심 위치가 변경된 경우만 업데이트
+        if (
+          Math.abs(currentCenter.lat() - center.lat) > 0.0001 ||
+          Math.abs(currentCenter.lng() - center.lng) > 0.0001
+        ) {
+          mapInstanceRef.current.setCenter(
+            new window.naver.maps.LatLng(center.lat, center.lng)
+          );
+        }
+
+        // 줌 레벨이 변경된 경우만 업데이트
+        if (currentZoom !== zoom) {
+          mapInstanceRef.current.setZoom(zoom);
+        }
       }
-    };
-  }, [zoom, center.lat, center.lng, markers]);
+    }, [center.lat, center.lng, zoom]);
 
-  return (
-    <div className="relative">
-      <div
-        ref={mapRef}
-        id="map"
-        className="w-full rounded-lg border border-gray-300 bg-slate-100"
-        style={{
-          width: width,
-          height: height,
-        }}
-      />
-    </div>
-  );
-}
+    return (
+      <div className="relative" style={{ width, height }}>
+        <div
+          ref={mapRef}
+          id="map"
+          className="w-full h-full rounded-lg border border-gray-300 bg-slate-100"
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        />
+        {children}
+      </div>
+    );
+  })
+);
+
+export default Map;

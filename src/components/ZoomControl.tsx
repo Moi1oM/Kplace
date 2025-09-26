@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Plus, Minus } from "lucide-react";
+
 export default function ZoomControls() {
   const handleZoomIn = () => {
     const event = new CustomEvent("mapZoomIn");
@@ -13,18 +16,22 @@ export default function ZoomControls() {
 
   return (
     <div className="flex flex-col gap-2">
-      <button
+      <Button
         onClick={handleZoomIn}
-        className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full shadow-lg flex items-center justify-center text-gray-700 font-bold text-lg transition-colors duration-200"
+        variant="outline"
+        size="icon"
+        className="rounded-full shadow-lg"
       >
-        +
-      </button>
-      <button
+        <Plus className="h-4 w-4" />
+      </Button>
+      <Button
         onClick={handleZoomOut}
-        className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full shadow-lg flex items-center justify-center text-gray-700 font-bold text-lg transition-colors duration-200"
+        variant="outline"
+        size="icon"
+        className="rounded-full shadow-lg"
       >
-        −
-      </button>
+        <Minus className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
