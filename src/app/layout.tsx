@@ -17,6 +17,7 @@ import MarkerToggle from "@/components/MarkerToggle";
 import PaintButton from "@/components/PaintButton";
 import CooldownTimer from "@/components/CooldownTimer";
 import { TRPCProvider } from "@/lib/trpc/provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -87,6 +88,7 @@ export default function RootLayout({
             <CooldownTimer />
 
             {children}
+            <Toaster />
           </TRPCProvider>
         </body>
       </html>

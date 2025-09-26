@@ -6,18 +6,20 @@ import { trpc } from "@/lib/trpc/client";
 import { TRPCClientError } from "@trpc/client";
 import { createPixelOverlay, Pixel } from "@/lib/PixelOverlay";
 import { latLngToGrid } from "@/lib/grid-utils";
+import { toast } from "sonner";
 
 interface PixelCanvasProps {
   mapRef?: React.RefObject<any>;
 }
 
-const MIN_ZOOM = 12;
+const MIN_ZOOM = 15;
 
 export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const { currentZoom, canPaint, isPaintMode, selectedColor } = usePixelStore();
   const utils = trpc.useUtils();
   const overlayRef = useRef<any | null>(null);
+  const updateBoundsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isVisible = currentZoom >= MIN_ZOOM;
 
@@ -44,8 +46,8 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
         },
     {
       enabled: isVisible && visibleBounds !== null,
-      refetchInterval: 10000,
-      staleTime: 5000,
+      refetchInterval: 30000,
+      staleTime: 20000,
     }
   );
 
@@ -60,7 +62,7 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
         });
       }
     }
-  }, [pixelData, visibleBounds]);
+  }, [pixelData]);
 
   const createPixelMutation = trpc.pixel.create.useMutation({
     onSuccess: (data) => {
@@ -81,21 +83,32 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
         if (error.data?.code === "TOO_MANY_REQUESTS") {
           const cause = error.cause as any;
           const remaining = cause?.remainingSeconds;
-          alert(
-            `⏱️ 쿨다운 중입니다!\n${remaining ? `${remaining}초 후` : "잠시 후"} 다시 시도해주세요.`
-          );
+          toast.error("⏱️ 쿨다운 중입니다!", {
+            description: `${remaining ? `${remaining}초 후` : "잠시 후"} 다시 시도해주세요.`,
+            duration: 3000,
+          });
         } else if (error.data?.code === "UNAUTHORIZED") {
-          alert("🔐 로그인이 필요합니다.\n페이지를 새로고침하여 다시 로그인해주세요.");
+          toast.error("🔐 로그인이 필요합니다", {
+            description: "페이지를 새로고침하여 다시 로그인해주세요.",
+          });
         } else if (error.data?.code === "BAD_REQUEST") {
-          alert("❌ 잘못된 요청입니다.\n유효한 위치를 선택해주세요.");
+          toast.error("❌ 잘못된 요청입니다", {
+            description: "유효한 위치를 선택해주세요.",
+          });
         } else if (error.data?.code === "INTERNAL_SERVER_ERROR") {
-          alert("🔧 서버 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.");
+          toast.error("🔧 서버 오류가 발생했습니다", {
+            description: "잠시 후 다시 시도해주세요.",
+          });
         } else {
-          alert(`❌ 픽셀 배치 실패\n오류: ${error.message}`);
+          toast.error("❌ 픽셀 배치 실패", {
+            description: `오류: ${error.message}`,
+          });
         }
       } else {
         console.error("Unexpected error:", error);
-        alert("❌ 알 수 없는 오류가 발생했습니다.\n페이지를 새로고침해주세요.");
+        toast.error("❌ 알 수 없는 오류가 발생했습니다", {
+          description: "페이지를 새로고침해주세요.",
+        });
       }
     },
   });
@@ -122,19 +135,38 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
     overlayRef.current = overlay;
 
     const updateBounds = () => {
-      const bounds = mapInstance.getBounds();
-      const topLeft = latLngToGrid(bounds.getNE().lat(), bounds.getSW().lng());
-      const bottomRight = latLngToGrid(bounds.getSW().lat(), bounds.getNE().lng());
+      if (updateBoundsTimeoutRef.current) {
+        clearTimeout(updateBoundsTimeoutRef.current);
+      }
 
-      const bufferX = Math.ceil((bottomRight.x - topLeft.x) * 0.05);
-      const bufferY = Math.ceil((bottomRight.y - topLeft.y) * 0.05);
+      updateBoundsTimeoutRef.current = setTimeout(() => {
+        const bounds = mapInstance.getBounds();
+        const topLeft = latLngToGrid(bounds.getNE().lat(), bounds.getSW().lng());
+        const bottomRight = latLngToGrid(bounds.getSW().lat(), bounds.getNE().lng());
 
-      setVisibleBounds({
-        minX: Math.max(0, topLeft.x - bufferX),
-        maxX: Math.min(40000 - 1, bottomRight.x + bufferX),
-        minY: Math.max(0, topLeft.y - bufferY),
-        maxY: Math.min(80000 - 1, bottomRight.y + bufferY),
-      });
+        const bufferX = Math.ceil((bottomRight.x - topLeft.x) * 0.2);
+        const bufferY = Math.ceil((bottomRight.y - topLeft.y) * 0.2);
+
+        const newBounds = {
+          minX: Math.max(0, topLeft.x - bufferX),
+          maxX: Math.min(40000 - 1, bottomRight.x + bufferX),
+          minY: Math.max(0, topLeft.y - bufferY),
+          maxY: Math.min(80000 - 1, bottomRight.y + bufferY),
+        };
+
+        setVisibleBounds((prev) => {
+          if (!prev) return newBounds;
+
+          const threshold = 10;
+          const hasSignificantChange =
+            Math.abs(prev.minX - newBounds.minX) > threshold ||
+            Math.abs(prev.maxX - newBounds.maxX) > threshold ||
+            Math.abs(prev.minY - newBounds.minY) > threshold ||
+            Math.abs(prev.maxY - newBounds.maxY) > threshold;
+
+          return hasSignificantChange ? newBounds : prev;
+        });
+      }, 300);
     };
 
     setTimeout(updateBounds, 100);
@@ -147,6 +179,9 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
       overlayRef.current = null;
       naver.maps.Event.removeListener(dragEndListener);
       naver.maps.Event.removeListener(zoomChangedListener);
+      if (updateBoundsTimeoutRef.current) {
+        clearTimeout(updateBoundsTimeoutRef.current);
+      }
     };
   }, [mapRef, isVisible]);
 

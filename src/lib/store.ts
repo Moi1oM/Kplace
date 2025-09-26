@@ -19,6 +19,6 @@ export const usePixelStore = create<PixelStore>((set) => ({
   setSelectedColor: (color) => set({ selectedColor: color }),
   setCurrentZoom: (zoom) => set({
     currentZoom: zoom,
-    canPaint: zoom >= 12
+    canPaint: zoom >= 15
   }),
 }))

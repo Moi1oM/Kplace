@@ -3,23 +3,44 @@
 import { usePixelStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Palette, X } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { SignInButton } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 export default function PaintButton() {
   const { isPaintMode, setPaintMode, currentZoom } = usePixelStore();
-  const minZoom = 12;
+  const { isSignedIn } = useAuth();
+  const minZoom = 15;
 
   const togglePaintMode = () => {
+    if (!isSignedIn) {
+      return;
+    }
+
     if (currentZoom < minZoom) {
-      alert(
-        `🔍 줌을 더 확대해주세요!\n\n` +
-        `현재 줌 레벨: ${Math.round(currentZoom)}\n` +
-        `필요한 줌 레벨: ${minZoom} 이상\n\n` +
-        `지도를 더 확대한 후 다시 시도해주세요.`
-      );
+      toast.error("Zoom to paint!", {
+        description: `Current zoom: ${Math.round(currentZoom)} / Required: ${minZoom}+`,
+        duration: 3000,
+      });
       return;
     }
     setPaintMode(!isPaintMode);
   };
+
+  if (!isSignedIn) {
+    return (
+      <SignInButton mode="modal">
+        <Button
+          variant="default"
+          size="lg"
+          className="rounded-full shadow-xl"
+        >
+          <Palette className="w-5 h-5" />
+          Paint
+        </Button>
+      </SignInButton>
+    );
+  }
 
   return (
     <Button

@@ -9,6 +9,7 @@ import {
   useImperativeHandle,
 } from "react";
 import { usePixelStore } from "@/lib/store";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
@@ -127,7 +128,7 @@ const Map = memo(
 
     const handleZoomToPixels = useCallback(() => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.setZoom(12, true);
+        mapInstanceRef.current.setZoom(15, true);
       }
     }, []);
 
@@ -165,9 +166,9 @@ const Map = memo(
         console.error(
           "네이버 지도 API 인증에 실패했습니다. 클라이언트 ID를 확인해주세요."
         );
-        alert(
-          "네이버 지도 API 인증에 실패했습니다. 클라이언트 ID를 확인해주세요."
-        );
+        toast.error("네이버 지도 API 인증 실패", {
+          description: "클라이언트 ID를 확인해주세요.",
+        });
       };
 
       const initMap = () => {
@@ -201,8 +202,8 @@ const Map = memo(
         // 줌 레벨 변경 이벤트 리스너
         window.naver.maps.Event.addListener(map, "zoom_changed", function () {
           const newZoom = map.getZoom();
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[Map Debug] Zoom changed:', newZoom);
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Map Debug] Zoom changed:", newZoom);
           }
           setCurrentZoom(newZoom);
         });
@@ -285,8 +286,8 @@ const Map = memo(
           id="map"
           className="w-full h-full rounded-lg border border-gray-300 bg-slate-100"
           style={{
-            width: '100%',
-            height: '100%',
+            width: "100%",
+            height: "100%",
           }}
         />
         {children}
