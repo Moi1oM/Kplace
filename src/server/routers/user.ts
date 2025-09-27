@@ -86,6 +86,43 @@ export const userRouter = router({
       }
     }),
 
+  getRemainingPixels: protectedProcedure
+    .query(async ({ ctx }) => {
+      const MAX_PIXELS = 5;
+      const WINDOW_MS = 60 * 1000;
+
+      const user = await ctx.prisma.user.findUnique({
+        where: { clerkId: ctx.userId },
+        select: {
+          pixelWindowStartTime: true,
+          pixelCount: true,
+        },
+      });
+
+      if (user?.pixelWindowStartTime) {
+        const elapsed = Date.now() - user.pixelWindowStartTime.getTime();
+        if (elapsed > WINDOW_MS) {
+          return {
+            remaining: MAX_PIXELS,
+            total: MAX_PIXELS,
+            resetAt: null,
+          };
+        }
+
+        return {
+          remaining: MAX_PIXELS - user.pixelCount,
+          total: MAX_PIXELS,
+          resetAt: new Date(user.pixelWindowStartTime.getTime() + WINDOW_MS),
+        };
+      }
+
+      return {
+        remaining: MAX_PIXELS,
+        total: MAX_PIXELS,
+        resetAt: null,
+      };
+    }),
+
   // 추가 사용자 관련 프로시저
   getStats: protectedProcedure
     .query(async ({ ctx }) => {

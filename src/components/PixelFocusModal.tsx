@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePixelStore } from "@/lib/store";
+import { trpc } from "@/lib/trpc/client";
 
 const COLORS = [
   "#000000",
@@ -41,6 +42,10 @@ export default function PixelFocusModal() {
   } = usePixelFocus();
 
   const { setPaintMode } = usePixelStore();
+  const { data: remainingData } = trpc.user.getRemainingPixels.useQuery(
+    undefined,
+    { refetchInterval: 1000, enabled: !!focusedPixel }
+  );
 
   if (!focusedPixel) return null;
 
@@ -55,7 +60,7 @@ export default function PixelFocusModal() {
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-sm">
             <MapPin className="w-4 h-4 text-blue-600" />
-            Pixel: {focusedPixel.x}, {focusedPixel.y}
+            픽셀 : {focusedPixel.x}, {focusedPixel.y}
             {loadingRegion ? (
               <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
             ) : (
@@ -90,7 +95,7 @@ export default function PixelFocusModal() {
             <span>Painted by {pixelData.user.username || "Anonymous"}</span>
           </div>
         ) : (
-          <p className="text-xs text-gray-600">Not painted</p>
+          <p className="text-center text-xs text-gray-600">Not painted</p>
         )}
 
         <div className="flex flex-col items-center">
@@ -139,7 +144,7 @@ export default function PixelFocusModal() {
               Painting...
             </>
           ) : (
-            "Paint"
+            `칠하기 ${remainingData?.remaining ?? 5}/${remainingData?.total ?? 5}`
           )}
         </Button>
       </CardContent>

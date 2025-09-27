@@ -49,22 +49,38 @@ const checkCooldown = t.middleware(async ({ ctx, next }) => {
     where: { clerkId: ctx.userId },
   });
 
-  if (user?.lastPixelTime) {
-    const cooldownMinutes = parseInt(process.env.PIXEL_COOLDOWN_MINUTES || '1');
-    const cooldownMs = cooldownMinutes * 60 * 1000;
-    const timeSinceLastPixel = Date.now() - user.lastPixelTime.getTime();
+  const MAX_PIXELS_PER_WINDOW = 5;
+  const WINDOW_DURATION_MS = 60 * 1000;
 
-    if (timeSinceLastPixel < cooldownMs) {
-      const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastPixel) / 1000);
-      throw new TRPCError({
-        code: 'TOO_MANY_REQUESTS',
-        message: `쿨다운 중입니다. ${remainingSeconds}초 후 다시 시도해주세요.`,
-        cause: {
-          cooldown: true,
-          remainingSeconds,
+  if (user?.pixelWindowStartTime) {
+    const elapsed = Date.now() - user.pixelWindowStartTime.getTime();
+
+    if (elapsed > WINDOW_DURATION_MS) {
+      await ctx.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          pixelWindowStartTime: null,
+          pixelCount: 0,
         },
       });
+      return next({ ctx });
     }
+  }
+
+  if (user && user.pixelCount >= MAX_PIXELS_PER_WINDOW) {
+    const remainingMs = WINDOW_DURATION_MS -
+      (Date.now() - user.pixelWindowStartTime!.getTime());
+    const remainingSeconds = Math.ceil(remainingMs / 1000);
+
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: `1분에 ${MAX_PIXELS_PER_WINDOW}개 제한입니다. ${remainingSeconds}초 후 리셋됩니다.`,
+      cause: {
+        cooldown: true,
+        remainingSeconds,
+        remainingPixels: 0,
+      },
+    });
   }
 
   return next({ ctx });

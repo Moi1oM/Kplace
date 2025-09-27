@@ -23,6 +23,7 @@ export function usePixelFocus() {
       toast.success("✅ 픽셀이 배치되었습니다!");
       utils.pixel.getAll.invalidate();
       utils.pixel.getByCoordinate.invalidate();
+      utils.user.getRemainingPixels.invalidate();
       setFocusedPixel(null);
       setPaintMode(false);
     },
@@ -30,9 +31,9 @@ export function usePixelFocus() {
       if (error.data?.code === "TOO_MANY_REQUESTS") {
         const cause = error.cause as any;
         const remaining = cause?.remainingSeconds;
-        toast.error("⏱️ 쿨다운 중입니다!", {
-          description: `${remaining ? `${remaining}초 후` : "잠시 후"} 다시 시도해주세요.`,
-          duration: 3000,
+        toast.error("🚫 픽셀 제한!", {
+          description: `1분에 5개까지 배치 가능합니다. ${remaining ? `${remaining}초 후` : "잠시 후"} 리셋됩니다.`,
+          duration: 5000,
         });
       } else {
         toast.error("❌ 픽셀 배치 실패", {

@@ -136,7 +136,11 @@ export const pixelRouter = router({
           // 쿨다운 업데이트
           await tx.user.update({
             where: { id: user.id },
-            data: { lastPixelTime: new Date() },
+            data: {
+              lastPixelTime: new Date(),
+              pixelWindowStartTime: user.pixelWindowStartTime || new Date(),
+              pixelCount: { increment: 1 },
+            },
           });
 
           return newPixel;
