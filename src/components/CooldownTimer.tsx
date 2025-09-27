@@ -17,10 +17,6 @@ export default function CooldownTimer() {
       enabled: isSignedIn, // Only run query when signed in
       refetchInterval: cooldownRemaining > 0 ? 2000 : 10000, // Check more frequently when cooling down
       staleTime: 1000, // Consider data fresh for 1 second
-      cacheTime: 5000, // Keep in cache for 5 seconds
-      onError: (error) => {
-        console.error('Error fetching cooldown:', error.message);
-      },
     }
   );
 
@@ -52,7 +48,7 @@ export default function CooldownTimer() {
       <Alert className="bg-gray-900 text-white border-gray-700 shadow-lg">
         <Clock className="h-4 w-4 animate-pulse" />
         <AlertDescription className="text-white ml-2">
-          Cooldown: {minutes}:{seconds.toString().padStart(2, '0')}
+          Cooldown: {minutes}:{seconds.toString().padStart(2, "0")}
         </AlertDescription>
       </Alert>
     </div>

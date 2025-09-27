@@ -1,7 +1,11 @@
-import { router, publicProcedure, rateLimitedProcedure } from '../trpc/trpc';
-import { TRPCError } from '@trpc/server';
-import { createPixelSchema, getPixelsSchema, getPixelByCoordinateSchema } from '../schemas';
-import type { Pixel } from '@prisma/client';
+import { router, publicProcedure, rateLimitedProcedure } from "../trpc/trpc";
+import { TRPCError } from "@trpc/server";
+import {
+  createPixelSchema,
+  getPixelsSchema,
+  getPixelByCoordinateSchema,
+} from "../schemas";
+import type { Pixel } from "@prisma/client";
 
 export const pixelRouter = router({
   // 특정 좌표의 픽셀 조회 (공개)
@@ -42,7 +46,7 @@ export const pixelRouter = router({
           },
         };
       } catch (error) {
-        console.error('Error fetching pixel by coordinate:', error);
+        console.error("Error fetching pixel by coordinate:", error);
         return null;
       }
     }),
@@ -72,7 +76,10 @@ export const pixelRouter = router({
 
         return { pixels };
       } catch (error) {
-        console.error('Database error, falling back to in-memory storage:', error);
+        console.error(
+          "Database error, falling back to in-memory storage:",
+          error
+        );
 
         // DB 실패 시 폴백
         if (!global.pixelsStorage) {
@@ -83,15 +90,19 @@ export const pixelRouter = router({
         let filteredPixels = global.pixelsStorage;
 
         if (input.minX !== undefined && input.maxX !== undefined) {
-          filteredPixels = filteredPixels.filter(p => p.x >= input.minX! && p.x <= input.maxX!);
+          filteredPixels = filteredPixels.filter(
+            (p) => p.x >= input.minX! && p.x <= input.maxX!
+          );
         }
         if (input.minY !== undefined && input.maxY !== undefined) {
-          filteredPixels = filteredPixels.filter(p => p.y >= input.minY! && p.y <= input.maxY!);
+          filteredPixels = filteredPixels.filter(
+            (p) => p.y >= input.minY! && p.y <= input.maxY!
+          );
         }
 
         return {
           pixels: filteredPixels,
-          warning: 'Using in-memory storage (database unavailable)',
+          warning: "Using in-memory storage (database unavailable)",
         };
       }
     }),
@@ -100,6 +111,12 @@ export const pixelRouter = router({
   create: rateLimitedProcedure
     .input(createPixelSchema)
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "인증되지 않은 사용자입니다.",
+        });
+      }
       const { x, y, color } = input;
 
       try {
@@ -164,7 +181,7 @@ export const pixelRouter = router({
         // tRPC 에러는 그대로 전달
         if (error instanceof TRPCError) throw error;
 
-        console.error('Error placing pixel:', error);
+        console.error("Error placing pixel:", error);
 
         // 데이터베이스 오류 시 폴백 처리
         try {
@@ -174,16 +191,20 @@ export const pixelRouter = router({
           }
 
           // 쿨다운 체크 (메모리 기반)
-          const cooldownMinutes = parseInt(process.env.PIXEL_COOLDOWN_MINUTES || '1');
+          const cooldownMinutes = parseInt(
+            process.env.PIXEL_COOLDOWN_MINUTES || "1"
+          );
           const cooldownMs = cooldownMinutes * 60 * 1000;
           const lastPixelTime = global.userPixelTimes[ctx.userId];
 
           if (lastPixelTime) {
             const timeSinceLastPixel = Date.now() - lastPixelTime;
             if (timeSinceLastPixel < cooldownMs) {
-              const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastPixel) / 1000);
+              const remainingSeconds = Math.ceil(
+                (cooldownMs - timeSinceLastPixel) / 1000
+              );
               throw new TRPCError({
-                code: 'TOO_MANY_REQUESTS',
+                code: "TOO_MANY_REQUESTS",
                 message: `쿨다운 중입니다. ${remainingSeconds}초 후 다시 시도해주세요.`,
                 cause: {
                   cooldown: true,
@@ -203,7 +224,7 @@ export const pixelRouter = router({
 
           // 기존 픽셀 제거
           global.pixelsStorage = global.pixelsStorage.filter(
-            p => !(p.x === x && p.y === y)
+            (p) => !(p.x === x && p.y === y)
           );
 
           // 새 픽셀 추가
@@ -212,14 +233,14 @@ export const pixelRouter = router({
           return {
             success: true,
             pixel: { x, y, color },
-            warning: 'Pixel placed in memory only (database unavailable)',
+            warning: "Pixel placed in memory only (database unavailable)",
           };
         } catch (fallbackError) {
           if (fallbackError instanceof TRPCError) throw fallbackError;
 
           throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: '픽셀 배치 중 오류가 발생했습니다.',
+            code: "INTERNAL_SERVER_ERROR",
+            message: "픽셀 배치 중 오류가 발생했습니다.",
             cause: error,
           });
         }
