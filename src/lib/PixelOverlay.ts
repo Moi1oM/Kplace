@@ -19,6 +19,7 @@ interface PixelOverlayOptions {
   selectedColor: string;
   currentZoom: number;
   minZoom: number;
+  onPixelClick?: (x: number, y: number) => void;
   onPixelCreate?: (x: number, y: number, color: string) => void;
 }
 
@@ -247,14 +248,19 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
   }
 
   private _handleClick = (e: MouseEvent) => {
-    if (!this._options.canPaint || !this._options.onPixelCreate) return;
-
     const projection = this.getProjection();
     const point = new naver.maps.Point(e.offsetX, e.offsetY);
     const latLng = projection.fromOffsetToCoord(point);
-
     const { x, y } = latLngToGrid(latLng.lat(), latLng.lng());
-    this._options.onPixelCreate(x, y, this._options.selectedColor);
+
+    if (this._options.onPixelClick) {
+      this._options.onPixelClick(x, y);
+      return;
+    }
+
+    if (this._options.canPaint && this._options.onPixelCreate) {
+      this._options.onPixelCreate(x, y, this._options.selectedColor);
+    }
   };
 
   private _handleMouseMove = (e: MouseEvent) => {

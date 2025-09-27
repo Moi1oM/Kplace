@@ -41,10 +41,14 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
           enabled: () => process.env.NODE_ENV === 'development',
           logger(opts) {
             const { direction, path } = opts;
-            if (direction === 'down' && opts.result instanceof Error) {
-              console.error(`[tRPC] ${path} failed:`, opts.result.message);
+            if (direction === 'down') {
+              if (opts.result instanceof Error) {
+                console.error(`[tRPC] ${path} failed:`, opts.result.message);
+              } else {
+                console.log(`[tRPC] ${path} success:`, opts.result);
+              }
             } else if (direction === 'up') {
-              console.log(`[tRPC] ${path} ${opts.input ? 'called' : 'called'}`);
+              console.log(`[tRPC] ${path} called with:`, opts.input);
             }
           },
         }),

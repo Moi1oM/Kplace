@@ -8,7 +8,7 @@ import { SignInButton } from "@clerk/nextjs";
 import { toast } from "sonner";
 
 export default function PaintButton() {
-  const { isPaintMode, setPaintMode, currentZoom } = usePixelStore();
+  const { isPaintMode, setPaintMode, currentZoom, setFocusedPixel } = usePixelStore();
   const { isSignedIn } = useAuth();
   const minZoom = 15;
 
@@ -18,23 +18,26 @@ export default function PaintButton() {
     }
 
     if (currentZoom < minZoom) {
-      toast.error("Zoom to paint!", {
-        description: `Current zoom: ${Math.round(currentZoom)} / Required: ${minZoom}+`,
+      toast.error("칠하려면 확대하세요.", {
+        description: `현재 확대 정도: ${Math.round(currentZoom)} / 필요한 정도: ${minZoom}+`,
         duration: 3000,
       });
       return;
     }
-    setPaintMode(!isPaintMode);
+
+    if (!isPaintMode) {
+      setPaintMode(true);
+      window.dispatchEvent(new CustomEvent("focusCenterPixel"));
+    } else {
+      setPaintMode(false);
+      setFocusedPixel(null);
+    }
   };
 
   if (!isSignedIn) {
     return (
       <SignInButton mode="modal">
-        <Button
-          variant="default"
-          size="lg"
-          className="rounded-full shadow-xl"
-        >
+        <Button variant="default" size="lg" className="rounded-full shadow-xl">
           <Palette className="w-5 h-5" />
           Paint
         </Button>
@@ -52,12 +55,12 @@ export default function PaintButton() {
       {isPaintMode ? (
         <>
           <X className="w-5 h-5" />
-          Exit Paint
+          나가기
         </>
       ) : (
         <>
           <Palette className="w-5 h-5" />
-          Paint
+          칠하기
         </>
       )}
     </Button>

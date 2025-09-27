@@ -1,9 +1,52 @@
 import { router, publicProcedure, rateLimitedProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import { createPixelSchema, getPixelsSchema } from '../schemas';
+import { createPixelSchema, getPixelsSchema, getPixelByCoordinateSchema } from '../schemas';
 import type { Pixel } from '@prisma/client';
 
 export const pixelRouter = router({
+  // 특정 좌표의 픽셀 조회 (공개)
+  getByCoordinate: publicProcedure
+    .input(getPixelByCoordinateSchema)
+    .query(async ({ ctx, input }) => {
+      const { x, y } = input;
+
+      try {
+        const pixel = await ctx.prisma.pixel.findFirst({
+          where: {
+            x,
+            y,
+            isActive: true,
+          },
+          include: {
+            user: {
+              select: {
+                username: true,
+                clerkId: true,
+              },
+            },
+          },
+        });
+
+        if (!pixel) {
+          return null;
+        }
+
+        return {
+          x: pixel.x,
+          y: pixel.y,
+          color: pixel.color,
+          userId: pixel.userId,
+          createdAt: pixel.createdAt,
+          user: {
+            username: pixel.user.username,
+          },
+        };
+      } catch (error) {
+        console.error('Error fetching pixel by coordinate:', error);
+        return null;
+      }
+    }),
+
   // 픽셀 조회 (공개)
   getAll: publicProcedure
     .input(getPixelsSchema)

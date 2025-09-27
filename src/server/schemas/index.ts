@@ -32,6 +32,8 @@ export const getPixelsSchema = z.object({
   { message: "Invalid bounds: min values must be less than or equal to max values" }
 );
 
+export const getPixelByCoordinateSchema = pixelCoordinateSchema;
+
 // 사용자 관련 스키마
 export const userIdSchema = z.string().min(1);
 

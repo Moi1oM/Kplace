@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import Map from "@/components/Map";
 import PixelCanvas from "@/components/PixelCanvas";
 import ColorPalette from "@/components/ColorPalette";
+import PixelFocusModal from "@/components/PixelFocusModal";
+import { usePixelStore } from "@/lib/store";
 
 // 한국 주요 도청 마커 데이터 - 컴포넌트 외부에 정의하여 재생성 방지
 const MARKER_DATA = [
@@ -86,6 +88,19 @@ export default function Home() {
   const markers = useMemo(() => MARKER_DATA, []);
   const center = useMemo(() => ({ lat: 36.5, lng: 127.5 }), []);
   const mapRef = useRef<any>(null);
+  const setFocusedPixel = usePixelStore((state) => state.setFocusedPixel);
+
+  useEffect(() => {
+    const handleFocusCenter = () => {
+      const centerPixel = mapRef.current?.getCenterPixel();
+      if (centerPixel) {
+        setFocusedPixel({ x: centerPixel.x, y: centerPixel.y });
+      }
+    };
+
+    window.addEventListener("focusCenterPixel", handleFocusCenter);
+    return () => window.removeEventListener("focusCenterPixel", handleFocusCenter);
+  }, [setFocusedPixel]);
 
   return (
     <main className="w-screen h-screen overflow-hidden relative">
@@ -104,6 +119,8 @@ export default function Home() {
         </Map>
         {/* 색상 팔레트 */}
         <ColorPalette />
+        {/* 픽셀 포커스 모달 */}
+        <PixelFocusModal />
       </div>
     </main>
   );

@@ -31,9 +31,9 @@ const COLORS = [
 ];
 
 const ColorPalette = memo(function ColorPalette() {
-  const { selectedColor, setSelectedColor, isPaintMode, canPaint, currentZoom } = usePixelStore();
+  const { selectedColor, setSelectedColor, isPaintMode, canPaint, currentZoom, focusedPixel } = usePixelStore();
 
-  if (!isPaintMode) return null;
+  if (!isPaintMode || focusedPixel) return null;
 
   return (
     <Card className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 shadow-xl">

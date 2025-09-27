@@ -68,3 +68,4 @@ Auth: Clerk (handles all user management and sessions).
 Database: Supabase Postgres.
 ORM: Prisma (the only way to interact with the database).
 Deployment: Vercel (CI/CD from GitHub).
+- If you are using libary / external APIs you must search on the web and find docs and ensure that use existing and not deprecated functions

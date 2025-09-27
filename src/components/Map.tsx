@@ -10,6 +10,7 @@ import {
 } from "react";
 import { usePixelStore } from "@/lib/store";
 import { toast } from "sonner";
+import { latLngToGrid } from "@/lib/grid-utils";
 
 declare global {
   interface Window {
@@ -152,6 +153,12 @@ const Map = memo(
           const projection = mapInstanceRef.current.getProjection();
           const point = new window.naver.maps.Point(x, y);
           return projection.fromOffsetToCoord(point);
+        },
+        getCenterPixel: () => {
+          if (!mapInstanceRef.current) return null;
+          const center = mapInstanceRef.current.getCenter();
+          const { x, y } = latLngToGrid(center.lat(), center.lng());
+          return { x, y };
         },
       }),
       []
