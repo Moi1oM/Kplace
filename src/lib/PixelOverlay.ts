@@ -21,6 +21,7 @@ interface PixelOverlayOptions {
   minZoom: number;
   onPixelClick?: (x: number, y: number) => void;
   onPixelCreate?: (x: number, y: number, color: string) => void;
+  onPixelHover?: (x: number, y: number) => void;
 }
 
 export function createPixelOverlay(options: PixelOverlayOptions) {
@@ -277,6 +278,10 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
 
     this._lastHoverPos = { x, y };
     this._drawHoverPreview(x, y);
+
+    if (this._options.onPixelHover) {
+      this._options.onPixelHover(x, y);
+    }
   };
 
   private _handleMouseLeave = () => {

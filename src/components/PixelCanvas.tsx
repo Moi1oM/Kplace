@@ -16,7 +16,7 @@ const MIN_ZOOM = 15;
 
 export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
   const [pixels, setPixels] = useState<Pixel[]>([]);
-  const { currentZoom, canPaint, isPaintMode, selectedColor } = usePixelStore();
+  const { currentZoom, canPaint, isPaintMode, selectedColor, setFocusedPixel } = usePixelStore();
   const utils = trpc.useUtils();
   const overlayRef = useRef<any | null>(null);
   const updateBoundsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -129,6 +129,11 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
       onPixelCreate: (x, y, color) => {
         createPixelMutation.mutate({ x, y, color });
       },
+      onPixelHover: (x, y) => {
+        if (isPaintMode) {
+          setFocusedPixel({ x, y });
+        }
+      },
     });
 
     overlay.setMap(mapInstance);
@@ -183,7 +188,7 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
         clearTimeout(updateBoundsTimeoutRef.current);
       }
     };
-  }, [mapRef, isVisible]);
+  }, [mapRef, isVisible, setFocusedPixel, isPaintMode]);
 
   useEffect(() => {
     if (overlayRef.current) {

@@ -1,9 +1,3 @@
-declare global {
-  interface Window {
-    naver: any;
-  }
-}
-
 export function getRegionCategory(area1Name: string): string {
   if (area1Name.includes('서울')) return '서울시';
   if (area1Name.includes('경기')) return '경기도';
@@ -27,61 +21,28 @@ export function getRegionCategory(area1Name: string): string {
   return '기타';
 }
 
-function waitForNaverMaps(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof window !== 'undefined' && window.naver?.maps?.Service) {
-      resolve();
-      return;
-    }
-
-    const checkInterval = setInterval(() => {
-      if (window.naver?.maps?.Service) {
-        clearInterval(checkInterval);
-        resolve();
-      }
-    }, 100);
-
-    setTimeout(() => {
-      clearInterval(checkInterval);
-      resolve();
-    }, 5000);
-  });
-}
-
 export async function getRegionFromCoords(
   lat: number,
   lng: number
 ): Promise<string> {
-  await waitForNaverMaps();
+  try {
+    const response = await fetch(
+      `/api/reverse-geocode?lat=${lat}&lng=${lng}`
+    );
 
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !window.naver?.maps?.Service) {
-      resolve('위치 정보 없음');
-      return;
+    if (!response.ok) {
+      throw new Error('Failed to fetch region');
     }
 
-    const latLng = new window.naver.maps.LatLng(lat, lng);
+    const data = await response.json();
 
-    window.naver.maps.Service.reverseGeocode(
-      {
-        coords: latLng,
-        orders: window.naver.maps.Service.OrderType.ADDR,
-      },
-      (status: any, response: any) => {
-        if (status !== window.naver.maps.Service.Status.OK) {
-          resolve('위치 정보 없음');
-          return;
-        }
+    if (!data.area1Name) {
+      return '위치 정보 없음';
+    }
 
-        try {
-          const result = response.v2.results[0];
-          const area1Name = result.region.area1.name;
-          const regionCategory = getRegionCategory(area1Name);
-          resolve(regionCategory);
-        } catch (error) {
-          resolve('위치 정보 없음');
-        }
-      }
-    );
-  });
+    return getRegionCategory(data.area1Name);
+  } catch (error) {
+    console.error('Failed to get region:', error);
+    return '위치 정보 없음';
+  }
 }

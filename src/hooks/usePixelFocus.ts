@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 import { usePixelStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
-import { gridToLatLng } from "@/lib/grid-utils";
-import { getRegionFromCoords } from "@/lib/region-utils";
+// import { gridToLatLng } from "@/lib/grid-utils";
+// import { getRegionFromCoords } from "@/lib/region-utils";
 import { toast } from "sonner";
 
 export function usePixelFocus() {
   const { focusedPixel, setFocusedPixel, selectedColor, setSelectedColor, setPaintMode } =
     usePixelStore();
-  const [region, setRegion] = useState<string>("");
-  const [loadingRegion, setLoadingRegion] = useState(false);
+  // const [region, setRegion] = useState<string>("");
+  // const [loadingRegion, setLoadingRegion] = useState(false);
   const utils = trpc.useUtils();
 
   const { data: pixelData, isLoading: pixelLoading } =
@@ -43,26 +43,26 @@ export function usePixelFocus() {
     },
   });
 
-  useEffect(() => {
-    if (focusedPixel) {
-      setLoadingRegion(true);
-      const { lat, lng } = gridToLatLng(focusedPixel.x, focusedPixel.y);
+  // useEffect(() => {
+  //   if (focusedPixel) {
+  //     setLoadingRegion(true);
+  //     const { lat, lng } = gridToLatLng(focusedPixel.x, focusedPixel.y);
 
-      getRegionFromCoords(lat, lng)
-        .then((regionName) => {
-          setRegion(regionName);
-        })
-        .catch((error) => {
-          console.error("Failed to get region:", error);
-          setRegion("위치 정보 없음");
-        })
-        .finally(() => {
-          setLoadingRegion(false);
-        });
-    } else {
-      setRegion("");
-    }
-  }, [focusedPixel]);
+  //     getRegionFromCoords(lat, lng)
+  //       .then((regionName) => {
+  //         setRegion(regionName);
+  //       })
+  //       .catch((error) => {
+  //         console.error("Failed to get region:", error);
+  //         setRegion("위치 정보 없음");
+  //       })
+  //       .finally(() => {
+  //         setLoadingRegion(false);
+  //       });
+  //   } else {
+  //     setRegion("");
+  //   }
+  // }, [focusedPixel]);
 
   const handlePaint = () => {
     if (!focusedPixel) {
@@ -79,8 +79,8 @@ export function usePixelFocus() {
   return {
     focusedPixel,
     setFocusedPixel,
-    region,
-    loadingRegion,
+    // region,
+    // loadingRegion,
     pixelData,
     pixelLoading,
     selectedColor,

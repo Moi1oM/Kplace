@@ -31,8 +31,8 @@ export default function PixelFocusModal() {
   const {
     focusedPixel,
     setFocusedPixel,
-    region,
-    loadingRegion,
+    // region,
+    // loadingRegion,
     pixelData,
     pixelLoading,
     selectedColor,
@@ -61,13 +61,13 @@ export default function PixelFocusModal() {
           <CardTitle className="flex items-center gap-2 text-sm">
             <MapPin className="w-4 h-4 text-blue-600" />
             픽셀 : {focusedPixel.x}, {focusedPixel.y}
-            {loadingRegion ? (
+            {/* {loadingRegion ? (
               <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
             ) : (
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-normal">
                 🇰🇷 {region}
               </span>
-            )}
+            )} */}
           </CardTitle>
           <Button
             variant="ghost"
@@ -92,7 +92,9 @@ export default function PixelFocusModal() {
               className="w-4 h-4 rounded border border-gray-300"
               style={{ backgroundColor: pixelData.color }}
             />
-            <span>Painted by {pixelData.user.username || "Anonymous"}</span>
+            <span className="text-center">
+              Painted by {pixelData.user.username || "Anonymous"}
+            </span>
           </div>
         ) : (
           <p className="text-center text-xs text-gray-600">Not painted</p>

@@ -2,6 +2,13 @@
   "name": "k-place",
   "version": "0.1.0",
   "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/client",
+      "sharp"
+    ]
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
