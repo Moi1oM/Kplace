@@ -6,6 +6,7 @@ import {
   getPixelByCoordinateSchema,
 } from "../schemas";
 import type { Pixel } from "@prisma/client";
+import { isColorAllowedForCommunity } from "@/lib/communities";
 
 export const pixelRouter = router({
   // 특정 좌표의 픽셀 조회 (공개)
@@ -26,6 +27,7 @@ export const pixelRouter = router({
               select: {
                 username: true,
                 clerkId: true,
+                community: true,
               },
             },
           },
@@ -43,6 +45,7 @@ export const pixelRouter = router({
           createdAt: pixel.createdAt,
           user: {
             username: pixel.user.username,
+            community: pixel.user.community,
           },
         };
       } catch (error) {
@@ -128,6 +131,13 @@ export const pixelRouter = router({
         if (!user) {
           user = await ctx.prisma.user.create({
             data: { clerkId: ctx.userId },
+          });
+        }
+
+        if (!isColorAllowedForCommunity(color, user.community)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "선택한 색상은 사용할 수 없습니다. 커뮤니티 전용 색상입니다.",
           });
         }
 

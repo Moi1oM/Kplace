@@ -13,16 +13,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Community {
+  DC
+  FM
+  THEQOO
+  PPOMPPU
+  RULIWEB
+  INVEN
+  MLBPARK
+  ARCALIVE
+  NATEPANN
+  CLIEN
+  BOBAE
+  INSTIZ
+  HUMORUNIV
+  ORBI
+  ETC
+}
+
 model User {
-  id                   String    @id @default(cuid(2))
-  clerkId              String    @unique
+  id                   String     @id @default(cuid(2))
+  clerkId              String     @unique
   username             String?
+  community            Community?
+  communitySetAt       DateTime?
   lastPixelTime        DateTime?
   pixelWindowStartTime DateTime?
-  pixelCount           Int       @default(0)
+  pixelCount           Int        @default(0)
   pixels               Pixel[]
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 }
 
 model Pixel {

@@ -13,7 +13,7 @@ import {
 import Script from "next/script";
 import ZoomControls from "@/components/ZoomControl";
 import ZoomToPixels from "@/components/ZoomToPixels";
-import MarkerToggle from "@/components/MarkerToggle";
+import InfoModal from "@/components/InfoModal";
 import PaintButton from "@/components/PaintButton";
 import CooldownTimer from "@/components/CooldownTimer";
 import { TRPCProvider } from "@/lib/trpc/provider";
@@ -82,8 +82,8 @@ export default function RootLayout({
 
             {/* Zoom 안내 텍스트 - 상단 중앙 */}
             <ZoomToPixels />
-            {/* 마커 토글 버튼 - 좌측 상단 */}
-            <MarkerToggle />
+            {/* 도움말 버튼 - 좌측 상단 */}
+            <InfoModal />
             {/* 쿨다운 타이머 */}
             <CooldownTimer />
 

@@ -10,28 +10,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-const COLORS = [
-  "#000000", // Black
-  "#FFFFFF", // White
-  "#FF0000", // Red
-  "#00FF00", // Lime
-  "#0000FF", // Blue
-  "#FFFF00", // Yellow
-  "#FF00FF", // Magenta
-  "#00FFFF", // Cyan
-  "#FF8800", // Orange
-  "#88FF00", // Chartreuse
-  "#0088FF", // Sky Blue
-  "#8800FF", // Purple
-  "#FF0088", // Rose
-  "#808080", // Gray
-  "#C0C0C0", // Silver
-  "#800000", // Maroon
-];
+import { trpc } from "@/lib/trpc/client";
+import { getAvailableColors } from "@/lib/communities";
 
 const ColorPalette = memo(function ColorPalette() {
   const { selectedColor, setSelectedColor, isPaintMode, canPaint, currentZoom, focusedPixel } = usePixelStore();
+  const { data: communityInfo } = trpc.user.getCommunityInfo.useQuery();
+
+  const availableColors = getAvailableColors(communityInfo?.community || null);
 
   if (!isPaintMode || focusedPixel) return null;
 
@@ -63,7 +49,7 @@ const ColorPalette = memo(function ColorPalette() {
             onValueChange={(value) => value && canPaint && setSelectedColor(value)}
             className="grid grid-cols-8 gap-2"
           >
-            {COLORS.map((color) => (
+            {availableColors.map((color) => (
               <Tooltip key={color}>
                 <TooltipTrigger asChild>
                   <ToggleGroupItem

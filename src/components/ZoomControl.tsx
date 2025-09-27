@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
+import CommunityButton from "./CommunityButton";
 
 export default function ZoomControls() {
   const handleZoomIn = () => {
@@ -32,6 +33,7 @@ export default function ZoomControls() {
       >
         <Minus className="h-4 w-4" />
       </Button>
+      <CommunityButton />
     </div>
   );
 }

@@ -15,7 +15,12 @@ export function usePixelFocus() {
   const { data: pixelData, isLoading: pixelLoading } =
     trpc.pixel.getByCoordinate.useQuery(
       { x: focusedPixel?.x ?? 0, y: focusedPixel?.y ?? 0 },
-      { enabled: !!focusedPixel }
+      {
+        enabled: !!focusedPixel,
+        staleTime: 30000,
+        gcTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+      }
     );
 
   const createPixelMutation = trpc.pixel.create.useMutation({

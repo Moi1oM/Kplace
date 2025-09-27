@@ -1,5 +1,8 @@
 import { router, protectedProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import { Community } from '@prisma/client';
+import { COMMUNITY_CHANGE_COOLDOWN_DAYS } from '@/lib/communities';
 
 export const userRouter = router({
   getCooldownStatus: protectedProcedure
@@ -156,6 +159,110 @@ export const userRouter = router({
           joinedAt: null,
           warning: 'Stats unavailable (database error)',
         };
+      }
+    }),
+
+  getCommunityInfo: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const user = await ctx.prisma.user.findUnique({
+          where: { clerkId: ctx.userId },
+          select: {
+            community: true,
+            communitySetAt: true,
+          },
+        });
+
+        if (!user) {
+          return {
+            community: null,
+            canChange: true,
+            daysRemaining: 0,
+          };
+        }
+
+        const cooldownMs = COMMUNITY_CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+        let canChange = true;
+        let daysRemaining = 0;
+
+        if (user.communitySetAt) {
+          const timeSinceSet = Date.now() - user.communitySetAt.getTime();
+          if (timeSinceSet < cooldownMs) {
+            canChange = false;
+            daysRemaining = Math.ceil((cooldownMs - timeSinceSet) / (24 * 60 * 60 * 1000));
+          }
+        }
+
+        return {
+          community: user.community,
+          communitySetAt: user.communitySetAt,
+          canChange,
+          daysRemaining,
+        };
+      } catch (error) {
+        console.error('Error fetching community info:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '커뮤니티 정보를 가져오는 중 오류가 발생했습니다.',
+          cause: error,
+        });
+      }
+    }),
+
+  updateCommunity: protectedProcedure
+    .input(z.object({
+      community: z.nativeEnum(Community),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const user = await ctx.prisma.user.findUnique({
+          where: { clerkId: ctx.userId },
+          select: {
+            communitySetAt: true,
+          },
+        });
+
+        if (user?.communitySetAt) {
+          const cooldownMs = COMMUNITY_CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+          const timeSinceSet = Date.now() - user.communitySetAt.getTime();
+
+          if (timeSinceSet < cooldownMs) {
+            const daysRemaining = Math.ceil((cooldownMs - timeSinceSet) / (24 * 60 * 60 * 1000));
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `커뮤니티는 ${daysRemaining}일 후에 변경할 수 있습니다.`,
+            });
+          }
+        }
+
+        const updatedUser = await ctx.prisma.user.update({
+          where: { clerkId: ctx.userId },
+          data: {
+            community: input.community,
+            communitySetAt: new Date(),
+          },
+          select: {
+            id: true,
+            username: true,
+            community: true,
+            communitySetAt: true,
+          },
+        });
+
+        return {
+          success: true,
+          user: updatedUser,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error updating user community:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '커뮤니티 정보를 업데이트하는 중 오류가 발생했습니다.',
+          cause: error,
+        });
       }
     }),
 });

@@ -85,7 +85,7 @@ const MARKER_DATA = [
 
 export default function Home() {
   // 메모이제이션으로 markers와 center가 재생성되지 않도록 방지
-  const markers = useMemo(() => MARKER_DATA, []);
+  // const markers = useMemo(() => MARKER_DATA, []);
   const center = useMemo(() => ({ lat: 36.5, lng: 127.5 }), []);
   const mapRef = useRef<any>(null);
   const setFocusedPixel = usePixelStore((state) => state.setFocusedPixel);
@@ -99,7 +99,8 @@ export default function Home() {
     };
 
     window.addEventListener("focusCenterPixel", handleFocusCenter);
-    return () => window.removeEventListener("focusCenterPixel", handleFocusCenter);
+    return () =>
+      window.removeEventListener("focusCenterPixel", handleFocusCenter);
   }, [setFocusedPixel]);
 
   return (
@@ -112,7 +113,7 @@ export default function Home() {
           height="100vh"
           zoom={8}
           center={center}
-          markers={markers}
+          // markers={markers}
         >
           {/* 픽셀 캔버스 오버레이 - Map 내부로 이동 */}
           <PixelCanvas mapRef={mapRef} />

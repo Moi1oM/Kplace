@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { usePixelFocus } from "@/hooks/usePixelFocus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,25 +8,8 @@ import { MapPin, Loader2, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePixelStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
-
-const COLORS = [
-  "#000000",
-  "#FFFFFF",
-  "#FF0000",
-  "#00FF00",
-  "#0000FF",
-  "#FFFF00",
-  "#FF00FF",
-  "#00FFFF",
-  "#FF8800",
-  "#88FF00",
-  "#0088FF",
-  "#8800FF",
-  "#FF0088",
-  "#808080",
-  "#C0C0C0",
-  "#800000",
-];
+import { COMMUNITIES, getAvailableColors } from "@/lib/communities";
+import { formatTimeAgo } from "@/lib/date-utils";
 
 export default function PixelFocusModal() {
   const {
@@ -46,6 +30,9 @@ export default function PixelFocusModal() {
     undefined,
     { refetchInterval: 1000, enabled: !!focusedPixel }
   );
+  const { data: communityInfo } = trpc.user.getCommunityInfo.useQuery();
+
+  const availableColors = getAvailableColors(communityInfo?.community || null);
 
   if (!focusedPixel) return null;
 
@@ -87,14 +74,45 @@ export default function PixelFocusModal() {
             Loading...
           </div>
         ) : pixelData ? (
-          <div className="text-xs text-gray-600 flex items-center gap-2">
-            <div
-              className="w-4 h-4 rounded border border-gray-300"
-              style={{ backgroundColor: pixelData.color }}
-            />
-            <span className="text-center">
-              Painted by {pixelData.user.username || "Anonymous"}
-            </span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <div
+                className="w-4 h-4 rounded border border-gray-300"
+                style={{ backgroundColor: pixelData.color }}
+              />
+              <span className="text-gray-700 font-medium">
+                {pixelData.user.username || "Anonymous"}
+              </span>
+            </div>
+
+            {pixelData.user.community && (
+              <div>
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor:
+                      COMMUNITIES[pixelData.user.community].color + "20",
+                    color: COMMUNITIES[pixelData.user.community].color,
+                    border: `1px solid ${COMMUNITIES[pixelData.user.community].color}40`,
+                  }}
+                >
+                  {COMMUNITIES[pixelData.user.community].logoPath && (
+                    <Image
+                      src={COMMUNITIES[pixelData.user.community].logoPath}
+                      alt={COMMUNITIES[pixelData.user.community].name}
+                      width={16}
+                      height={16}
+                      className="rounded"
+                    />
+                  )}
+                  {COMMUNITIES[pixelData.user.community].name}
+                </span>
+              </div>
+            )}
+
+            <div className="text-xs text-gray-500">
+              📅 {formatTimeAgo(pixelData.createdAt)}
+            </div>
           </div>
         ) : (
           <p className="text-center text-xs text-gray-600">Not painted</p>
@@ -108,7 +126,7 @@ export default function PixelFocusModal() {
             onValueChange={(value) => value && setSelectedColor(value)}
             className="grid grid-cols-8 gap-1.5"
           >
-            {COLORS.map((color) => (
+            {availableColors.map((color) => (
               <ToggleGroupItem
                 key={color}
                 value={color}
