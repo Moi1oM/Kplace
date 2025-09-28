@@ -31,8 +31,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kplace",
-  description: "Pixel War",
+  title: "Kplace - 커뮤니티 픽셀 전쟁",
+  description:
+    "대한민국 지도 위에서 펼쳐지는 커뮤니티 픽셀 전쟁! 당신의 커뮤니티를 위해 픽셀을 그려보세요.",
+  openGraph: {
+    type: "website",
+    url: "https://kplace.site",
+    title: "Kplace - 커뮤니티 픽셀 전쟁",
+    description:
+      "대한민국 지도 위에서 펼쳐지는 커뮤니티 픽셀 전쟁! 당신의 커뮤니티를 위해 픽셀을 그려보세요.",
+    siteName: "Kplace",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Kplace - 커뮤니티 픽셀 전쟁",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kplace - 커뮤니티 픽셀 전쟁",
+    description:
+      "대한민국 지도 위에서 펼쳐지는 커뮤니티 픽셀 전쟁! 당신의 커뮤니티를 위해 픽셀을 그려보세요.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
