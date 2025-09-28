@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { Community } from '@prisma/client';
 import { COMMUNITY_CHANGE_COOLDOWN_DAYS } from '@/lib/communities';
+import { clerkClient } from '@clerk/nextjs/server';
 
 export const userRouter = router({
   getCooldownStatus: protectedProcedure
@@ -235,6 +236,9 @@ export const userRouter = router({
           }
         }
 
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(ctx.userId);
+
         const updatedUser = await ctx.prisma.user.upsert({
           where: { clerkId: ctx.userId },
           update: {
@@ -243,6 +247,7 @@ export const userRouter = router({
           },
           create: {
             clerkId: ctx.userId,
+            username: clerkUser.username || clerkUser.firstName || 'User',
             community: input.community,
             communitySetAt: new Date(),
           },

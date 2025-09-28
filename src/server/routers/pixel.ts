@@ -8,6 +8,7 @@ import {
 } from "../schemas";
 import type { Pixel } from "@prisma/client";
 import { isColorAllowedForCommunity } from "@/lib/communities";
+import { clerkClient } from "@clerk/nextjs/server";
 
 export const pixelRouter = router({
   // 특정 좌표의 픽셀 조회 (공개)
@@ -185,8 +186,14 @@ export const pixelRouter = router({
         });
 
         if (!user) {
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(ctx.userId);
+
           user = await ctx.prisma.user.create({
-            data: { clerkId: ctx.userId },
+            data: {
+              clerkId: ctx.userId,
+              username: clerkUser.username || clerkUser.firstName || 'User'
+            },
           });
         }
 
