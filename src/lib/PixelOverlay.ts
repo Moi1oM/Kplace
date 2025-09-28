@@ -19,6 +19,7 @@ interface PixelOverlayOptions {
   selectedColor: string;
   currentZoom: number;
   minZoom: number;
+  viewedPixel?: { x: number; y: number } | null;
   onPixelClick?: (x: number, y: number) => void;
   onPixelCreate?: (x: number, y: number, color: string) => void;
   onPixelHover?: (x: number, y: number) => void;
@@ -56,7 +57,7 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     this._hoverCanvas.style.position = 'absolute';
     this._hoverCanvas.style.top = '0';
     this._hoverCanvas.style.left = '0';
-    this._hoverCanvas.style.pointerEvents = this._options.isPaintMode ? 'auto' : 'none';
+    this._hoverCanvas.style.pointerEvents = 'auto';
     this._hoverCanvas.style.cursor = this._getCursor();
     overlayLayer.appendChild(this._hoverCanvas);
 
@@ -115,10 +116,14 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     this._options.currentZoom = currentZoom;
 
     if (this._hoverCanvas) {
-      this._hoverCanvas.style.pointerEvents = isPaintMode ? 'auto' : 'none';
       this._hoverCanvas.style.cursor = this._getCursor();
     }
 
+    this.draw();
+  }
+
+  updateViewedPixel(viewedPixel: { x: number; y: number } | null) {
+    this._options.viewedPixel = viewedPixel;
     this.draw();
   }
 
@@ -128,7 +133,7 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     } else if (this._options.isPaintMode && !this._options.canPaint) {
       return 'not-allowed';
     }
-    return 'default';
+    return 'pointer';
   }
 
   private _getPixelSize(): number {
@@ -214,6 +219,8 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
         pixelSize
       );
     });
+
+    this._drawViewedPixelHighlight();
   }
 
   private _drawGrid(ctx: CanvasRenderingContext2D, bounds: any, projection: any, pixelSize: number) {
@@ -248,19 +255,54 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     ctx.stroke();
   }
 
+  private _drawViewedPixelHighlight() {
+    if (!this._canvas || !this._options.viewedPixel) return;
+
+    const ctx = this._canvas.getContext('2d');
+    if (!ctx) return;
+
+    const map = this.getMap();
+    if (!map) return;
+
+    const projection = this.getProjection();
+    const pixelSize = this._getPixelSize();
+
+    const { x, y } = this._options.viewedPixel;
+    const { lat, lng } = gridToLatLng(x, y);
+    const latLng = new naver.maps.LatLng(lat, lng);
+    const point = projection.fromCoordToOffset(latLng);
+
+    ctx.save();
+
+    ctx.shadowColor = '#00d9ff';
+    ctx.shadowBlur = 10;
+
+    ctx.strokeStyle = '#00d9ff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(
+      point.x - pixelSize / 2,
+      point.y - pixelSize / 2,
+      pixelSize,
+      pixelSize
+    );
+
+    ctx.restore();
+  }
+
   private _handleClick = (e: MouseEvent) => {
     const projection = this.getProjection();
     const point = new naver.maps.Point(e.offsetX, e.offsetY);
     const latLng = projection.fromOffsetToCoord(point);
     const { x, y } = latLngToGrid(latLng.lat(), latLng.lng());
 
-    if (this._options.onPixelClick) {
-      this._options.onPixelClick(x, y);
-      return;
-    }
-
-    if (this._options.canPaint && this._options.onPixelCreate) {
-      this._options.onPixelCreate(x, y, this._options.selectedColor);
+    if (this._options.isPaintMode) {
+      if (this._options.canPaint && this._options.onPixelCreate) {
+        this._options.onPixelCreate(x, y, this._options.selectedColor);
+      }
+    } else {
+      if (this._options.onPixelClick) {
+        this._options.onPixelClick(x, y);
+      }
     }
   };
 

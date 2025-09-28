@@ -25,7 +25,7 @@ export default function PixelFocusModal() {
     isPainting,
   } = usePixelFocus();
 
-  const { setPaintMode } = usePixelStore();
+  const { setPaintMode, setViewedPixel } = usePixelStore();
   const { communityInfo } = useCommunityStore();
   const { data: remainingData } = trpc.user.getRemainingPixels.useQuery(
     undefined,
@@ -39,6 +39,7 @@ export default function PixelFocusModal() {
   const handleClose = () => {
     setFocusedPixel(null);
     setPaintMode(false);
+    setViewedPixel(null);
   };
 
   return (

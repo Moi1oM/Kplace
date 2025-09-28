@@ -5,6 +5,7 @@ import Map from "@/components/Map";
 import PixelCanvas from "@/components/PixelCanvas";
 import ColorPalette from "@/components/ColorPalette";
 import PixelFocusModal from "@/components/PixelFocusModal";
+import PixelInfoModal from "@/components/PixelInfoModal";
 import { usePixelStore } from "@/lib/store";
 
 // 한국 주요 도청 마커 데이터 - 컴포넌트 외부에 정의하여 재생성 방지
@@ -120,8 +121,10 @@ export default function Home() {
         </Map>
         {/* 색상 팔레트 */}
         <ColorPalette />
-        {/* 픽셀 포커스 모달 */}
+        {/* 픽셀 포커스 모달 (Paint mode) */}
         <PixelFocusModal />
+        {/* 픽셀 정보 모달 (View mode) */}
+        <PixelInfoModal />
       </div>
     </main>
   );

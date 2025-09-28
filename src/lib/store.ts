@@ -7,10 +7,12 @@ interface PixelStore {
   currentZoom: number
   canPaint: boolean
   focusedPixel: { x: number; y: number } | null
+  viewedPixel: { x: number; y: number } | null
   setPaintMode: (mode: boolean) => void
   setSelectedColor: (color: string) => void
   setCurrentZoom: (zoom: number) => void
   setFocusedPixel: (pixel: { x: number; y: number } | null) => void
+  setViewedPixel: (pixel: { x: number; y: number } | null) => void
 }
 
 export const usePixelStore = create<PixelStore>((set) => ({
@@ -19,6 +21,7 @@ export const usePixelStore = create<PixelStore>((set) => ({
   currentZoom: 8,
   canPaint: false,
   focusedPixel: null,
+  viewedPixel: null,
   setPaintMode: (mode) => set({ isPaintMode: mode }),
   setSelectedColor: (color) => set({ selectedColor: color }),
   setCurrentZoom: (zoom) => set({
@@ -26,6 +29,7 @@ export const usePixelStore = create<PixelStore>((set) => ({
     canPaint: zoom >= 15
   }),
   setFocusedPixel: (pixel) => set({ focusedPixel: pixel }),
+  setViewedPixel: (pixel) => set({ viewedPixel: pixel }),
 }))
 
 interface CommunityInfo {
