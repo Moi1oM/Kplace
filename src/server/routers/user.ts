@@ -235,9 +235,14 @@ export const userRouter = router({
           }
         }
 
-        const updatedUser = await ctx.prisma.user.update({
+        const updatedUser = await ctx.prisma.user.upsert({
           where: { clerkId: ctx.userId },
-          data: {
+          update: {
+            community: input.community,
+            communitySetAt: new Date(),
+          },
+          create: {
+            clerkId: ctx.userId,
             community: input.community,
             communitySetAt: new Date(),
           },

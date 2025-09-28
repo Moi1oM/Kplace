@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { usePixelStore } from "@/lib/store";
+import { usePixelStore, useCommunityStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
 import { COMMUNITIES, getAvailableColors } from "@/lib/communities";
 import { formatTimeAgo } from "@/lib/date-utils";
@@ -26,11 +26,11 @@ export default function PixelFocusModal() {
   } = usePixelFocus();
 
   const { setPaintMode } = usePixelStore();
+  const { communityInfo } = useCommunityStore();
   const { data: remainingData } = trpc.user.getRemainingPixels.useQuery(
     undefined,
     { refetchInterval: 1000, enabled: !!focusedPixel }
   );
-  const { data: communityInfo } = trpc.user.getCommunityInfo.useQuery();
 
   const availableColors = getAvailableColors(communityInfo?.community || null);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { usePixelStore } from "@/lib/store";
+import { usePixelStore, useCommunityStore } from "@/lib/store";
 import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -10,12 +10,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { trpc } from "@/lib/trpc/client";
 import { getAvailableColors } from "@/lib/communities";
 
 const ColorPalette = memo(function ColorPalette() {
   const { selectedColor, setSelectedColor, isPaintMode, canPaint, currentZoom, focusedPixel } = usePixelStore();
-  const { data: communityInfo } = trpc.user.getCommunityInfo.useQuery();
+  const { communityInfo } = useCommunityStore();
 
   const availableColors = getAvailableColors(communityInfo?.community || null);
 

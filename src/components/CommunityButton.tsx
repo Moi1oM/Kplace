@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,24 +11,63 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Home, Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc/client";
 import { COMMUNITIES } from "@/lib/communities";
 import { Community } from "@prisma/client";
 import { toast } from "sonner";
+import { useCommunityStore } from "@/lib/store";
+
+const SESSION_KEY = "community_modal_dismissed";
 
 export default function CommunityButton() {
   const [open, setOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
 
-  const { data: communityInfo, isLoading } = trpc.user.getCommunityInfo.useQuery(
+  const { isSignedIn } = useAuth();
+  const { communityInfo, isLoading: storeLoading, setCommunityInfo } = useCommunityStore();
+  const { refetch, isLoading: queryLoading } = trpc.user.getCommunityInfo.useQuery(
     undefined,
-    { enabled: open }
+    { enabled: open && !communityInfo, refetchOnWindowFocus: false }
   );
 
+  const isLoading = storeLoading || queryLoading;
+
+  useEffect(() => {
+    if (!isSignedIn || isLoading || !communityInfo) return;
+
+    const dismissed = sessionStorage.getItem(SESSION_KEY);
+    if (dismissed) return;
+
+    const hasNoCommunity = !communityInfo.community;
+    if (hasNoCommunity && communityInfo.canChange) {
+      const timer = setTimeout(() => {
+        setOpen(true);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isSignedIn, communityInfo, isLoading]);
+
   const updateCommunityMutation = trpc.user.updateCommunity.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("커뮤니티가 설정되었습니다!");
+      sessionStorage.removeItem(SESSION_KEY);
+
+      setCommunityInfo({
+        community: data.user.community,
+        communitySetAt: data.user.communitySetAt,
+        canChange: false,
+        daysRemaining: 30,
+      });
+
       setOpen(false);
     },
     onError: (error) => {
@@ -45,42 +84,66 @@ export default function CommunityButton() {
     updateCommunityMutation.mutate({ community: selectedCommunity });
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen && !communityInfo?.community) {
+      sessionStorage.setItem(SESSION_KEY, "true");
+    }
+  };
+
   const currentCommunity = communityInfo?.community;
   const buttonLabel = currentCommunity
     ? COMMUNITIES[currentCommunity].shortName
     : "?";
 
+  const hasNoCommunity = !currentCommunity;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full shadow-lg bg-white"
-          style={{
-            backgroundColor: currentCommunity
-              ? COMMUNITIES[currentCommunity].color + "20"
-              : undefined,
-            borderColor: currentCommunity
-              ? COMMUNITIES[currentCommunity].color
-              : undefined,
-          }}
-        >
-          {currentCommunity && COMMUNITIES[currentCommunity].logoPath ? (
-            <Image
-              src={COMMUNITIES[currentCommunity].logoPath}
-              alt={COMMUNITIES[currentCommunity].name}
-              width={20}
-              height={20}
-              className="rounded"
-            />
-          ) : currentCommunity ? (
-            <span className="text-xs font-bold">{buttonLabel}</span>
-          ) : (
-            <Home className="h-4 w-4" />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <TooltipProvider>
+        <Tooltip open={hasNoCommunity ? undefined : false}>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={`rounded-full shadow-lg bg-white transition-all duration-300 ${
+                  hasNoCommunity
+                    ? "animate-pulse border-2 border-orange-400 bg-orange-50 hover:bg-orange-100"
+                    : ""
+                }`}
+                style={{
+                  backgroundColor: currentCommunity
+                    ? COMMUNITIES[currentCommunity].color + "20"
+                    : undefined,
+                  borderColor: currentCommunity
+                    ? COMMUNITIES[currentCommunity].color
+                    : undefined,
+                }}
+              >
+                {currentCommunity && COMMUNITIES[currentCommunity].logoPath ? (
+                  <Image
+                    src={COMMUNITIES[currentCommunity].logoPath}
+                    alt={COMMUNITIES[currentCommunity].name}
+                    width={20}
+                    height={20}
+                    className="rounded"
+                  />
+                ) : currentCommunity ? (
+                  <span className="text-xs font-bold">{buttonLabel}</span>
+                ) : (
+                  <Home className="h-5 w-5 text-orange-500" />
+                )}
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          {hasNoCommunity && (
+            <TooltipContent side="left" className="bg-orange-500 text-white">
+              <p className="font-semibold">🏠 커뮤니티를 선택해주세요!</p>
+            </TooltipContent>
           )}
-        </Button>
-      </DialogTrigger>
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>커뮤니티 선택</DialogTitle>

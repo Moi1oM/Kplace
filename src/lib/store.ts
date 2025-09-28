@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { Community } from '@prisma/client'
 
 interface PixelStore {
   isPaintMode: boolean
@@ -25,4 +26,35 @@ export const usePixelStore = create<PixelStore>((set) => ({
     canPaint: zoom >= 15
   }),
   setFocusedPixel: (pixel) => set({ focusedPixel: pixel }),
+}))
+
+interface CommunityInfo {
+  community: Community | null
+  communitySetAt: Date | null
+  canChange: boolean
+  daysRemaining: number
+}
+
+interface CommunityStore {
+  communityInfo: CommunityInfo | null
+  isLoading: boolean
+  error: Error | null
+  fetchAttempts: number
+  setCommunityInfo: (info: CommunityInfo | null) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: Error | null) => void
+  incrementFetchAttempts: () => void
+  resetFetchAttempts: () => void
+}
+
+export const useCommunityStore = create<CommunityStore>((set) => ({
+  communityInfo: null,
+  isLoading: false,
+  error: null,
+  fetchAttempts: 0,
+  setCommunityInfo: (info) => set({ communityInfo: info, error: null }),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
+  incrementFetchAttempts: () => set((state) => ({ fetchAttempts: state.fetchAttempts + 1 })),
+  resetFetchAttempts: () => set({ fetchAttempts: 0 }),
 }))

@@ -18,6 +18,7 @@ import PaintButton from "@/components/PaintButton";
 import CooldownTimer from "@/components/CooldownTimer";
 import { TRPCProvider } from "@/lib/trpc/provider";
 import { Toaster } from "@/components/ui/sonner";
+import CommunityProvider from "@/components/CommunityProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased h-full m-0 p-0 overflow-hidden`}
         >
           <TRPCProvider>
+            <CommunityProvider />
             {/* 네이버 지도 API 스크립트 - beforeInteractive로 우선 로딩 */}
             <Script
               type="text/javascript"
