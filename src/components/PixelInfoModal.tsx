@@ -9,7 +9,7 @@ import { usePixelStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
 import { COMMUNITIES } from "@/lib/communities";
 import { formatTimeAgo } from "@/lib/date-utils";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, SignInButton } from "@clerk/nextjs";
 import PixelHistoryModal from "./PixelHistoryModal";
 
 export default function PixelInfoModal() {
@@ -146,27 +146,40 @@ export default function PixelInfoModal() {
             히스토리
           </Button>
 
-          <Button
-            onClick={handlePaintClick}
-            disabled={!canPaint || pixelData?.isLocked}
-            className="flex-1"
-            variant="default"
-            size="sm"
-          >
-            {pixelData?.isLocked ? (
-              <>
-                <Lock className="w-4 h-4 mr-2" />
-                잠김
-              </>
-            ) : (
-              <>
+          {!isSignedIn ? (
+            <SignInButton mode="modal">
+              <Button
+                className="flex-1"
+                variant="default"
+                size="sm"
+              >
                 <Paintbrush className="w-4 h-4 mr-2" />
-                {canPaint
-                  ? `칠하기 ${remainingData?.remaining ?? 0}/${remainingData?.total ?? 5}`
-                  : "쿨다운 중..."}
-              </>
-            )}
-          </Button>
+                로그인하고 칠하기
+              </Button>
+            </SignInButton>
+          ) : (
+            <Button
+              onClick={handlePaintClick}
+              disabled={!canPaint || pixelData?.isLocked}
+              className="flex-1"
+              variant="default"
+              size="sm"
+            >
+              {pixelData?.isLocked ? (
+                <>
+                  <Lock className="w-4 h-4 mr-2" />
+                  잠김
+                </>
+              ) : (
+                <>
+                  <Paintbrush className="w-4 h-4 mr-2" />
+                  {canPaint
+                    ? `칠하기 ${remainingData?.remaining ?? 0}/${remainingData?.total ?? 5}`
+                    : "쿨다운 중..."}
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </CardContent>
 
