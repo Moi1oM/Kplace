@@ -66,6 +66,7 @@ export default function WelcomeModal() {
             남겨주시면 큰 도움이 됩니다. 자세한 사항은 왼쪽 위 ? 버튼을 누르셔서
             확인해주세요.
           </p>
+          <p>픽셀이 짤리거나 안보인다면 우측 상단의 +- 버튼을 눌러주세요.</p>
           <p className="text-gray-700 font-medium">
             더 나은 서비스를 만들기 위해 최선을 다하겠습니다.
             <br />
