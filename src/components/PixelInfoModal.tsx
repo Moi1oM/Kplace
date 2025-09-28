@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2, X, User, Clock, Paintbrush } from "lucide-react";
+import { MapPin, Loader2, X, User, Clock, Paintbrush, History } from "lucide-react";
 import { usePixelStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
 import { COMMUNITIES } from "@/lib/communities";
 import { formatTimeAgo } from "@/lib/date-utils";
 import { useAuth } from "@clerk/nextjs";
+import PixelHistoryModal from "./PixelHistoryModal";
 
 export default function PixelInfoModal() {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const { isSignedIn } = useAuth();
   const { viewedPixel, setViewedPixel, setPaintMode, setFocusedPixel, focusedPixel } = usePixelStore();
 
@@ -43,7 +46,8 @@ export default function PixelInfoModal() {
   };
 
   return (
-    <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] sm:w-auto sm:min-w-[380px] max-w-md shadow-2xl rounded-md">
+    <>
+      <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] sm:w-auto sm:min-w-[380px] max-w-md shadow-2xl rounded-md">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-sm">
@@ -122,19 +126,42 @@ export default function PixelInfoModal() {
           </p>
         )}
 
-        <Button
-          onClick={handlePaintClick}
-          disabled={!canPaint}
-          className="w-full mt-3"
-          variant="default"
-          size="sm"
-        >
-          <Paintbrush className="w-4 h-4 mr-2" />
-          {canPaint
-            ? `이 픽셀 칠하기 ${remainingData?.remaining ?? 0}/${remainingData?.total ?? 5}`
-            : "쿨다운 중..."}
-        </Button>
+        <div className="flex gap-2 mt-3">
+          <Button
+            onClick={() => setHistoryOpen(true)}
+            variant="outline"
+            size="sm"
+            className="flex-1"
+          >
+            <History className="w-4 h-4 mr-2" />
+            히스토리
+          </Button>
+
+          <Button
+            onClick={handlePaintClick}
+            disabled={!canPaint}
+            className="flex-1"
+            variant="default"
+            size="sm"
+          >
+            <Paintbrush className="w-4 h-4 mr-2" />
+            {canPaint
+              ? `칠하기 ${remainingData?.remaining ?? 0}/${remainingData?.total ?? 5}`
+              : "쿨다운 중..."}
+          </Button>
+        </div>
       </CardContent>
-    </Card>
+
+      </Card>
+
+      {viewedPixel && (
+        <PixelHistoryModal
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          x={viewedPixel.x}
+          y={viewedPixel.y}
+        />
+      )}
+    </>
   );
 }

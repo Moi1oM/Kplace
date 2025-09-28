@@ -34,6 +34,12 @@ export const getPixelsSchema = z.object({
 
 export const getPixelByCoordinateSchema = pixelCoordinateSchema;
 
+export const getPixelHistorySchema = z.object({
+  x: z.number().int().min(0).max(39999),
+  y: z.number().int().min(0).max(79999),
+  limit: z.number().int().min(1).max(50).default(20),
+});
+
 // 사용자 관련 스키마
 export const userIdSchema = z.string().min(1);
 
@@ -69,6 +75,7 @@ export const userResponseSchema = z.object({
 // 타입 내보내기
 export type CreatePixelInput = z.infer<typeof createPixelSchema>;
 export type GetPixelsInput = z.infer<typeof getPixelsSchema>;
+export type GetPixelHistoryInput = z.infer<typeof getPixelHistorySchema>;
 export type PixelResponse = z.infer<typeof pixelResponseSchema>;
 export type PixelsResponse = z.infer<typeof pixelsResponseSchema>;
 export type CooldownStatus = z.infer<typeof cooldownStatusSchema>;

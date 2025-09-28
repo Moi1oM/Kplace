@@ -4,6 +4,7 @@ import {
   createPixelSchema,
   getPixelsSchema,
   getPixelByCoordinateSchema,
+  getPixelHistorySchema,
 } from "../schemas";
 import type { Pixel } from "@prisma/client";
 import { isColorAllowedForCommunity } from "@/lib/communities";
@@ -51,6 +52,49 @@ export const pixelRouter = router({
       } catch (error) {
         console.error("Error fetching pixel by coordinate:", error);
         return null;
+      }
+    }),
+
+  // 픽셀 히스토리 조회 (공개)
+  getHistory: publicProcedure
+    .input(getPixelHistorySchema)
+    .query(async ({ ctx, input }) => {
+      const { x, y, limit } = input;
+
+      try {
+        const history = await ctx.prisma.pixel.findMany({
+          where: { x, y },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          include: {
+            user: {
+              select: {
+                username: true,
+                community: true,
+              },
+            },
+          },
+        });
+
+        return {
+          history: history.map((p) => ({
+            id: p.id,
+            color: p.color,
+            isActive: p.isActive,
+            createdAt: p.createdAt,
+            user: {
+              username: p.user.username,
+              community: p.user.community,
+            },
+          })),
+          totalCount: history.length,
+        };
+      } catch (error) {
+        console.error("Error fetching pixel history:", error);
+        return {
+          history: [],
+          totalCount: 0,
+        };
       }
     }),
 
@@ -141,13 +185,45 @@ export const pixelRouter = router({
           });
         }
 
+        // 동일 좌표의 최신 픽셀 조회
+        const existingPixel = await ctx.prisma.pixel.findFirst({
+          where: { x, y, isActive: true },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        // 2시간 쿨다운 체크
+        if (existingPixel) {
+          const cooldownHours = parseInt(
+            process.env.PIXEL_MODIFICATION_COOLDOWN_HOURS || '2'
+          );
+          const cooldownMs = cooldownHours * 60 * 60 * 1000;
+          const timeSinceLastModification = Date.now() - existingPixel.createdAt.getTime();
+
+          if (timeSinceLastModification < cooldownMs) {
+            const remainingMs = cooldownMs - timeSinceLastModification;
+            const remainingMinutes = Math.ceil(remainingMs / 60000);
+
+            throw new TRPCError({
+              code: 'TOO_MANY_REQUESTS',
+              message: `이 픽셀은 ${remainingMinutes}분 후에 수정할 수 있습니다.`,
+              cause: {
+                pixelCooldown: true,
+                remainingMinutes,
+                cooldownHours,
+              },
+            });
+          }
+        }
+
         // 트랜잭션으로 픽셀 배치
         const result = await ctx.prisma.$transaction(async (tx) => {
-          // 기존 픽셀 비활성화
-          await tx.pixel.updateMany({
-            where: { x, y, isActive: true },
-            data: { isActive: false },
-          });
+          // 기존 픽셀 비활성화 (히스토리 보존)
+          if (existingPixel) {
+            await tx.pixel.update({
+              where: { id: existingPixel.id },
+              data: { isActive: false },
+            });
+          }
 
           // 새 픽셀 생성
           const newPixel = await tx.pixel.create({

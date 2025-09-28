@@ -57,5 +57,6 @@ model Pixel {
 
   @@unique([x, y, createdAt]) // Preserve history
   @@index([x, y, isActive]) // Fast queries for active pixels
+  @@index([x, y, createdAt]) // Fast queries for pixel history
   @@index([userId]) // Fast queries by user
 }

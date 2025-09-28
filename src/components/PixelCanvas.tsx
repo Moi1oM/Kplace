@@ -82,11 +82,19 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
       if (error instanceof TRPCClientError) {
         if (error.data?.code === "TOO_MANY_REQUESTS") {
           const cause = error.cause as any;
-          const remaining = cause?.remainingSeconds;
-          toast.error("⏱️ 쿨다운 중입니다!", {
-            description: `${remaining ? `${remaining}초 후` : "잠시 후"} 다시 시도해주세요.`,
-            duration: 3000,
-          });
+
+          if (cause?.pixelCooldown) {
+            toast.error("⏱️ 픽셀 수정 쿨다운", {
+              description: `이 픽셀은 ${cause.remainingMinutes}분 후에 수정할 수 있습니다.`,
+              duration: 5000,
+            });
+          } else {
+            const remaining = cause?.remainingSeconds;
+            toast.error("⏱️ 쿨다운 중입니다!", {
+              description: `${remaining ? `${remaining}초 후` : "잠시 후"} 다시 시도해주세요.`,
+              duration: 3000,
+            });
+          }
         } else if (error.data?.code === "UNAUTHORIZED") {
           toast.error("🔐 로그인이 필요합니다", {
             description: "페이지를 새로고침하여 다시 로그인해주세요.",
