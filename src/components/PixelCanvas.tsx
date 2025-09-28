@@ -16,6 +16,7 @@ const MIN_ZOOM = 15;
 
 export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
   const [pixels, setPixels] = useState<Pixel[]>([]);
+  const [lockedPixels, setLockedPixels] = useState<Set<string>>(new Set());
   const { currentZoom, canPaint, isPaintMode, selectedColor, setFocusedPixel, setViewedPixel, viewedPixel } = usePixelStore();
   const utils = trpc.useUtils();
   const overlayRef = useRef<any | null>(null);
@@ -62,6 +63,54 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
         });
       }
     }
+  }, [pixelData]);
+
+  useEffect(() => {
+    const checkLockedPixels = async () => {
+      if (!pixelData?.pixels || pixelData.pixels.length === 0) {
+        setLockedPixels(new Set());
+        return;
+      }
+
+      const cooldownHours = parseInt(
+        process.env.NEXT_PUBLIC_PIXEL_MODIFICATION_COOLDOWN_HOURS || '2'
+      );
+      const cooldownMs = cooldownHours * 60 * 60 * 1000;
+      const now = Date.now();
+
+      const locked = new Set<string>();
+
+      for (const pixel of pixelData.pixels) {
+        try {
+          const response = await fetch(
+            `/api/trpc/pixel.getByCoordinate?batch=1&input=${encodeURIComponent(
+              JSON.stringify({
+                "0": {
+                  json: { x: pixel.x, y: pixel.y }
+                }
+              })
+            )}`
+          );
+          const data = await response.json();
+          const pixelInfo = data?.[0]?.result?.data;
+
+          if (pixelInfo?.createdAt) {
+            const createdAt = new Date(pixelInfo.createdAt).getTime();
+            const timeSince = now - createdAt;
+
+            if (timeSince < cooldownMs) {
+              locked.add(`${pixel.x},${pixel.y}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to check lock status for pixel ${pixel.x},${pixel.y}:`, error);
+        }
+      }
+
+      setLockedPixels(locked);
+    };
+
+    checkLockedPixels();
   }, [pixelData]);
 
   const createPixelMutation = trpc.pixel.create.useMutation({
@@ -135,6 +184,7 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
       currentZoom,
       minZoom: MIN_ZOOM,
       viewedPixel,
+      lockedPixels,
       onPixelClick: (x, y) => {
         if (!isPaintMode) {
           setViewedPixel({ x, y });
@@ -221,6 +271,12 @@ export default function PixelCanvas({ mapRef }: PixelCanvasProps) {
       overlayRef.current.updateViewedPixel(viewedPixel);
     }
   }, [viewedPixel]);
+
+  useEffect(() => {
+    if (overlayRef.current) {
+      overlayRef.current.updateLockedPixels(lockedPixels);
+    }
+  }, [lockedPixels]);
 
   return null;
 }

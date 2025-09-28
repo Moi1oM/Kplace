@@ -4,7 +4,7 @@ import Image from "next/image";
 import { usePixelFocus } from "@/hooks/usePixelFocus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2, X } from "lucide-react";
+import { MapPin, Loader2, X, Lock } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePixelStore, useCommunityStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
@@ -114,6 +114,15 @@ export default function PixelFocusModal() {
             <div className="text-xs text-gray-500">
               📅 {formatTimeAgo(pixelData.createdAt)}
             </div>
+
+            {pixelData.isLocked && (
+              <div className="flex items-center gap-2 px-2 py-1.5 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                <Lock className="w-3 h-3" />
+                <span>
+                  <strong>{pixelData.remainingMinutes}분 후</strong> 수정 가능
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-center text-xs text-gray-600">Not painted</p>
@@ -155,7 +164,7 @@ export default function PixelFocusModal() {
 
         <Button
           onClick={handlePaint}
-          disabled={isPainting}
+          disabled={isPainting || pixelData?.isLocked}
           className="w-full"
           size="sm"
         >
@@ -163,6 +172,11 @@ export default function PixelFocusModal() {
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Painting...
+            </>
+          ) : pixelData?.isLocked ? (
+            <>
+              <Lock className="w-4 h-4 mr-2" />
+              잠김
             </>
           ) : (
             `칠하기 ${remainingData?.remaining ?? 5}/${remainingData?.total ?? 5}`

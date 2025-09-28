@@ -40,7 +40,8 @@ export default function InfoModal() {
               <p className="text-sm text-gray-600 leading-relaxed">
                 K-Place는 한국 지도 위에서 실시간으로 픽셀 아트를 그릴 수 있는
                 협업 캔버스입니다. 전국의 커뮤니티 사용자들과 경쟁을 해보세요!
-                각 커뮤니티는 전용 색상 2가지가 있습니다.
+                각 커뮤니티는 전용 색상 2가지가 있습니다. 픽셀은 찍고 난 후
+                2시간 동안만 보호됩니다.
               </p>
             </section>
 

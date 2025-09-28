@@ -38,12 +38,24 @@ export const pixelRouter = router({
           return null;
         }
 
+        const cooldownHours = parseInt(
+          process.env.PIXEL_MODIFICATION_COOLDOWN_HOURS || '2'
+        );
+        const cooldownMs = cooldownHours * 60 * 60 * 1000;
+        const timeSinceModification = Date.now() - pixel.createdAt.getTime();
+        const isLocked = timeSinceModification < cooldownMs;
+        const remainingMinutes = isLocked
+          ? Math.ceil((cooldownMs - timeSinceModification) / 60000)
+          : 0;
+
         return {
           x: pixel.x,
           y: pixel.y,
           color: pixel.color,
           userId: pixel.userId,
           createdAt: pixel.createdAt,
+          isLocked,
+          remainingMinutes,
           user: {
             username: pixel.user.username,
             community: pixel.user.community,

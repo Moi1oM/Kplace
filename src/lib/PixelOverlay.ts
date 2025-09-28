@@ -20,6 +20,7 @@ interface PixelOverlayOptions {
   currentZoom: number;
   minZoom: number;
   viewedPixel?: { x: number; y: number } | null;
+  lockedPixels?: Set<string>;
   onPixelClick?: (x: number, y: number) => void;
   onPixelCreate?: (x: number, y: number, color: string) => void;
   onPixelHover?: (x: number, y: number) => void;
@@ -127,11 +128,14 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     this.draw();
   }
 
+  updateLockedPixels(lockedPixels: Set<string>) {
+    this._options.lockedPixels = lockedPixels;
+    this.draw();
+  }
+
   private _getCursor(): string {
-    if (this._options.isPaintMode && this._options.canPaint) {
+    if (this._options.isPaintMode) {
       return 'crosshair';
-    } else if (this._options.isPaintMode && !this._options.canPaint) {
-      return 'not-allowed';
     }
     return 'pointer';
   }
@@ -296,7 +300,10 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     const { x, y } = latLngToGrid(latLng.lat(), latLng.lng());
 
     if (this._options.isPaintMode) {
-      if (this._options.canPaint && this._options.onPixelCreate) {
+      const pixelKey = `${x},${y}`;
+      const isLocked = this._options.lockedPixels?.has(pixelKey) || false;
+
+      if (this._options.canPaint && !isLocked && this._options.onPixelCreate) {
         this._options.onPixelCreate(x, y, this._options.selectedColor);
       }
     } else {
@@ -351,7 +358,35 @@ export function createPixelOverlay(options: PixelOverlayOptions) {
     const latLng = new naver.maps.LatLng(lat, lng);
     const point = projection.fromCoordToOffset(latLng);
 
-    if (this._options.canPaint) {
+    const pixelKey = `${gridX},${gridY}`;
+    const isLocked = this._options.lockedPixels?.has(pixelKey) || false;
+
+    if (isLocked) {
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.15)';
+      ctx.fillRect(
+        point.x - pixelSize / 2,
+        point.y - pixelSize / 2,
+        pixelSize,
+        pixelSize
+      );
+
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(
+        point.x - pixelSize / 2,
+        point.y - pixelSize / 2,
+        pixelSize,
+        pixelSize
+      );
+      ctx.setLineDash([]);
+
+      ctx.font = `${Math.max(12, pixelSize * 0.5)}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ff0000';
+      ctx.fillText('🔒', point.x, point.y);
+    } else if (this._options.canPaint) {
       ctx.fillStyle = this._options.selectedColor + '30';
       ctx.fillRect(
         point.x - pixelSize / 2,

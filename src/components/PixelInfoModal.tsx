@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2, X, User, Clock, Paintbrush, History } from "lucide-react";
+import { MapPin, Loader2, X, User, Clock, Paintbrush, History, Lock } from "lucide-react";
 import { usePixelStore } from "@/lib/store";
 import { trpc } from "@/lib/trpc/client";
 import { COMMUNITIES } from "@/lib/communities";
@@ -30,7 +30,7 @@ export default function PixelInfoModal() {
     }
   );
 
-  const canPaint = isSignedIn && (remainingData?.remaining ?? 0) > 0;
+  const canPaint = isSignedIn && (remainingData?.remaining ?? 0) > 0 && !pixelData?.isLocked;
 
   if (!viewedPixel || focusedPixel) return null;
 
@@ -126,6 +126,15 @@ export default function PixelInfoModal() {
           </p>
         )}
 
+        {pixelData?.isLocked && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+            <Lock className="w-3.5 h-3.5" />
+            <span>
+              이 픽셀은 <strong>{pixelData.remainingMinutes}분 후</strong>에 수정할 수 있습니다
+            </span>
+          </div>
+        )}
+
         <div className="flex gap-2 mt-3">
           <Button
             onClick={() => setHistoryOpen(true)}
@@ -139,15 +148,24 @@ export default function PixelInfoModal() {
 
           <Button
             onClick={handlePaintClick}
-            disabled={!canPaint}
+            disabled={!canPaint || pixelData?.isLocked}
             className="flex-1"
             variant="default"
             size="sm"
           >
-            <Paintbrush className="w-4 h-4 mr-2" />
-            {canPaint
-              ? `칠하기 ${remainingData?.remaining ?? 0}/${remainingData?.total ?? 5}`
-              : "쿨다운 중..."}
+            {pixelData?.isLocked ? (
+              <>
+                <Lock className="w-4 h-4 mr-2" />
+                잠김
+              </>
+            ) : (
+              <>
+                <Paintbrush className="w-4 h-4 mr-2" />
+                {canPaint
+                  ? `칠하기 ${remainingData?.remaining ?? 0}/${remainingData?.total ?? 5}`
+                  : "쿨다운 중..."}
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
