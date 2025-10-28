@@ -70,3 +70,6 @@ Please report bugs or share suggestions via GitHub Issues or by email at **hclou
 
 기여 및 의견 환영합니다!
 피드백/버그 신고는 GitHub Issues로 혹은 hcloud0806@gmail.com으로 연락해주세요.
+
+
+------- 현재 여러 이유로 프로젝트 개발이 멈춘상태입니다 -------
